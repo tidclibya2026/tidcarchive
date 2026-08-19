@@ -1,0 +1,32 @@
+# Project TODO
+
+- [x] Define institutional domain model for correspondence, decisions, circulars, referrals, departments, attachments, and audit activity.
+- [x] Extend authenticated user roles to support Director General, Follow-Up Office, Department Heads, and Staff with route and procedure permissions.
+- [x] Create database tables and migrations for departments, correspondence records, related decisions/circulars, workflow referrals, attachments, and activity history.
+- [x] Apply the database migration and verify the resulting schema through a safe read query.
+- [x] Build reusable Arabic RTL dashboard shell with responsive desktop sidebar and mobile navigation.
+- [x] Apply institutional visual tokens, Arabic typography, accessible colour contrast, and status visual language across the interface.
+- [x] Implement dashboard summary cards for active, overdue, in-progress, completed, and archived transactions.
+- [x] Implement incoming and outgoing correspondence list with Arabic filters, priority, date, status, and department metadata.
+- [x] Implement a validated correspondence registration form for number, date, entity, subject, priority, due date, and related records.
+- [x] Implement official sequential numbering and management screens for administrative decisions and internal circulars.
+- [x] Implement a referral workflow panel that supports referral, action instructions, due dates, reassignment, and status updates.
+- [x] Persist workflow actions in an immutable activity trail and show the latest action on transaction cards.
+- [x] Integrate secure object storage for PDFs and images and persist attachment metadata rather than file bytes.
+- [x] Add a mobile-safe attachment capture flow using the device camera with image preview, removal, and upload states.
+- [x] Implement a unified archive view with Arabic text search across document number, subject, entity, and linked record metadata.
+- [x] Implement the Follow-Up Office and Director General dashboard with active, overdue, and latest-action sections.
+- [x] Implement performance indicators for average completion time, overdue transactions, and workload distribution by department.
+- [x] Add component and backend Vitest coverage for permissions, status transitions, reference-number creation, and KPI calculations.
+- [x] Validate the Arabic RTL desktop and mobile layouts, including document capture controls, through rendered screenshots.
+- [x] Write concise operating and local-server transfer documentation for the prototype.
+- [x] Review all TODO entries, create the initial project checkpoint, and deliver the tested prototype.
+- [x] Add the archived-transactions indicator to the dashboard KPI API and visual summary.
+- [x] Add Arabic status, priority, department, and date filters to correspondence lists with server-side query support.
+- [x] Add outgoing-reference selection and stricter date validation to the correspondence registration workflow.
+- [x] Show the latest logged action directly on correspondence list rows.
+- [x] Add image thumbnails and per-file upload states to the mobile document-capture experience.
+- [x] Extend archive search to include metadata of correspondence linked to decisions and circulars.
+- [x] Add component rendering coverage and explicit workflow-transition rules to Vitest.
+- [x] Revalidate the Follow-Up page and document-capture screen through rendered desktop and mobile screenshots.
+- [x] Confirm the local deployment document exists and reflects the current prototype constraints.

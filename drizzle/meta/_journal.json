@@ -1,5 +1,27 @@
 {
   "version": "7",
   "dialect": "mysql",
-  "entries": []
+  "entries": [
+    {
+      "idx": 0,
+      "version": "5",
+      "when": 1787181480938,
+      "tag": "0000_curly_mathemanic",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1787181728630,
+      "tag": "0001_military_mastermind",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1787181827300,
+      "tag": "0002_reflective_doctor_strange",
+      "breakpoints": true
+    }
+  ]
 }
