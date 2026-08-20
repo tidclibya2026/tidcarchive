@@ -1,0 +1,10 @@
+[Unit]
+Description=Run TIDC weekly isolated restore verification
+
+[Timer]
+OnCalendar=Sun *-*-* 04:30:00
+Persistent=true
+RandomizedDelaySec=15m
+
+[Install]
+WantedBy=timers.target

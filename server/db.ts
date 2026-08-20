@@ -444,7 +444,26 @@ export async function createAttachmentRecord(input: {
   uploadedById: number;
 }) {
   const db = requireDb(await getDb());
-  await db.insert(attachments).values(input);
+  const result = await db.insert(attachments).values({ ...input, ocrStatus: input.extractedText ? "completed" : "pending" });
+  return { id: Number(result[0].insertId) };
+}
+
+export async function updateAttachmentOcr(input: { attachmentId: number; status: "processing" | "completed" | "failed" | "not_supported"; extractedText?: string; error?: string }) {
+  const db = requireDb(await getDb());
+  const now = new Date();
+  await db.update(attachments).set({
+    ocrStatus: input.status,
+    ocrAttemptedAt: now,
+    ocrCompletedAt: input.status === "completed" ? now : undefined,
+    extractedText: input.status === "completed" ? input.extractedText : undefined,
+    ocrError: input.status === "failed" ? input.error || "تعذرت معالجة OCR." : null,
+  }).where(eq(attachments.id, input.attachmentId));
+}
+
+export async function getAttachmentOcrDetail(attachmentId: number) {
+  const db = requireDb(await getDb());
+  const result = await db.select({ id: attachments.id, documentType: attachments.documentType, documentId: attachments.documentId, fileName: attachments.fileName, ocrStatus: attachments.ocrStatus, extractedText: attachments.extractedText, ocrError: attachments.ocrError, ocrAttemptedAt: attachments.ocrAttemptedAt, ocrCompletedAt: attachments.ocrCompletedAt }).from(attachments).where(eq(attachments.id, attachmentId)).limit(1);
+  return result[0];
 }
 
 export async function getDashboardData(departmentId?: number) {
@@ -513,6 +532,6 @@ export async function searchArchive(query: string, departmentId?: number) {
     ...correspondenceResults.map(({ record }) => ({ id: record.id, type: record.type, number: record.referenceNumber, subject: record.subject, date: record.documentDate, status: record.status })),
     ...decisionResults.map(({ record, linkedNumber, linkedSubject }) => ({ id: record.id, type: "decision" as const, number: record.decisionNumber, subject: linkedNumber ? `${record.subject} — مرجع: ${linkedNumber}${linkedSubject ? ` (${linkedSubject})` : ""}` : record.subject, date: record.effectiveDate, status: record.legalStatus })),
     ...circularResults.map(({ record, linkedNumber, linkedSubject }) => ({ id: record.id, type: "circular" as const, number: record.circularNumber, subject: linkedNumber ? `${record.subject} — مرجع: ${linkedNumber}${linkedSubject ? ` (${linkedSubject})` : ""}` : record.subject, date: record.issueDate, status: "issued" })),
-    ...allowedAttachments.map(record => ({ id: record.id, type: "attachment" as const, number: record.fileName, subject: `مرفق رقمي: ${record.fileName}`, date: record.createdAt, status: record.documentType })),
+    ...allowedAttachments.map(record => ({ id: record.id, type: "attachment" as const, number: record.fileName, subject: `مرفق رقمي: ${record.fileName}`, date: record.createdAt, status: record.documentType, ocrStatus: record.ocrStatus })),
   ];
 }

@@ -1,0 +1,17 @@
+[Unit]
+Description=TIDC local Arabic OCR worker
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=tidcocr
+Group=tidcocr
+EnvironmentFile=/etc/tidc-archive/ocr.env
+WorkingDirectory=/opt/tidc-archive/ops/ocr
+ExecStart=/opt/tidc-ocr/venv/bin/python /opt/tidc-archive/ops/ocr/ocr-worker.py
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

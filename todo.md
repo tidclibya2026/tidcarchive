@@ -65,3 +65,27 @@
 - [x] Prepare MinIO configuration guidance, bucket policy, backup procedure, and HTTPS reverse-proxy deployment instructions for the local server.
 - [x] Save a post-readiness checkpoint after the organizational import, audit export, tests, and production build.
 - [x] Record the operational readiness checkpoint identifier in the verification notes, then close the readiness review.
+- [x] Define secure OCR processing constraints for PDF and image attachments, including status tracking and indexed Arabic text storage.
+- [x] Implement OCR processing for uploaded PDF and image attachments and expose extracted text to the unified archive search.
+- [x] Add OCR status and extracted-text review indicators to attachment and archive interfaces.
+- [ ] Add tests for OCR queue inputs, safe text indexing, and archive search matches.
+- [x] Prepare a validated employee-import template for name, institutional email, role, department, office, and activation status.
+- [x] Import the user-supplied approved employee list and associate each account with its department or office without storing plaintext initial passwords.
+- [x] Design scheduled database and MinIO backup jobs with encrypted off-host retention and failure logging.
+- [x] Design a periodic isolated restore-verification procedure for database records and MinIO attachment objects.
+- [x] Document the required local-server secrets, schedules, retention policy, and test evidence for OCR and backups.
+- [ ] Verify the new OCR, employee-assignment, and backup-readiness workflows before saving the operational extension checkpoint.
+- [x] Review existing local accounts and assign each active account to the appropriate imported department or office where a verified match exists.
+- [x] Provide a reusable employee-import template without creating placeholder employee accounts.
+- [x] Map the supplied TIDC leadership and management list to institutional roles, departments, offices, and any missing organizational units.
+- [x] Create inactive staff directory records for the supplied personnel without inventing institutional email addresses or login credentials.
+- [ ] Request and apply approved institutional email addresses before activating local sign-in accounts for the imported personnel.
+- [x] Build a local-server-ready OCR integration contract that stores processing state, indexed Arabic text, and failure details without exposing document content.
+- [x] Create local backup, retention, encrypted transfer, and isolated restore-verification scripts for MySQL/TiDB and the MinIO bucket.
+- [x] Provide local systemd timer definitions for daily backup and periodic restore verification without embedding server credentials.
+- [x] Review existing local accounts and assign each active account to the appropriate imported department or office where a verified match exists.
+- [x] Provide a reusable employee-import template without creating placeholder employee accounts.
+- [x] Map the supplied TIDC leadership and management list to institutional roles, departments, offices, and any missing organizational units.
+- [x] Create inactive staff directory records for the supplied personnel without inventing institutional email addresses or login credentials.
+- [ ] Run an end-to-end local OCR job using a real PDF and image in MinIO, then verify extracted Arabic text is searchable in the archive.
+- [ ] Run the first encrypted backup and isolated restore verification on the center's local server, then record the service logs and results.

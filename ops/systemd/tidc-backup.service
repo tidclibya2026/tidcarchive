@@ -1,0 +1,11 @@
+[Unit]
+Description=TIDC encrypted database and MinIO backup
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=tidcbackup
+Group=tidcbackup
+Environment=TIDC_BACKUP_ENV_FILE=/etc/tidc-archive/backup.env
+ExecStart=/opt/tidc-archive/ops/backup/backup-tidc.sh

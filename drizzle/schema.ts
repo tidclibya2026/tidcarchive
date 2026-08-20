@@ -179,10 +179,14 @@ export const attachments = mysqlTable(
     mimeType: varchar("mimeType", { length: 100 }).notNull(),
     sizeBytes: int("sizeBytes").notNull(),
     extractedText: text("extractedText"),
+    ocrStatus: mysqlEnum("ocrStatus", ["pending", "processing", "completed", "failed", "not_supported"]).default("pending").notNull(),
+    ocrAttemptedAt: timestamp("ocrAttemptedAt"),
+    ocrCompletedAt: timestamp("ocrCompletedAt"),
+    ocrError: varchar("ocrError", { length: 500 }),
     uploadedById: int("uploadedById").notNull().references(() => users.id),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
   },
-  table => [index("attachments_document_idx").on(table.documentType, table.documentId)],
+  table => [index("attachments_document_idx").on(table.documentType, table.documentId), index("attachments_ocr_status_idx").on(table.ocrStatus)],
 );
 
 export const activityLogs = mysqlTable(

@@ -16,6 +16,7 @@ import { sdk } from "./_core/sdk";
 import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { storagePut } from "./storage";
+import { enqueueLocalOcr, supportsLocalOcr } from "./ocr";
 import { COOKIE_NAME, LOCAL_SESSION_COOKIE, ONE_YEAR_MS } from "@shared/const";
 import { exportAccountActivityCsv } from "../shared/audit";
 
@@ -76,7 +77,7 @@ async function archiveOfficialPdf(input: {
   const sanitized = input.fileName.replace(/[^a-zA-Z0-9._-]+/g, "-").slice(0, 160);
   const fileName = sanitized.toLowerCase().endsWith(".pdf") ? sanitized : `${sanitized}.pdf`;
   const { key, url } = await storagePut(`tidc-archive/${input.documentType}/${input.documentId}/${Date.now()}-${fileName}`, buffer, "application/pdf");
-  await archiveDb.createAttachmentRecord({
+  const attachment = await archiveDb.createAttachmentRecord({
     documentType: input.documentType,
     documentId: input.documentId,
     fileKey: key,
@@ -84,10 +85,11 @@ async function archiveOfficialPdf(input: {
     fileName: input.fileName,
     mimeType: "application/pdf",
     sizeBytes: buffer.length,
-    extractedText: input.extractedText,
-    uploadedById: input.uploadedById,
+  uploadedById: input.uploadedById,
   });
-  return { url, key, fileName: input.fileName };
+  const ocr = await enqueueLocalOcr({ attachmentId: attachment.id, fileKey: key, mimeType: "application/pdf" });
+  if (ocr.status !== "pending") await archiveDb.updateAttachmentOcr({ attachmentId: attachment.id, status: ocr.status === "processing" ? "processing" : ocr.status, error: ocr.detail });
+  return { url, key, fileName: input.fileName, attachmentId: attachment.id, ocrStatus: ocr.status };
 }
 
 export const appRouter = router({
@@ -268,6 +270,15 @@ export const appRouter = router({
       .query(({ ctx, input }) => archiveDb.searchArchive(input.query, scopedDepartment(ctx.user))),
   }),
   attachments: router({
+    ocrDetail: protectedProcedure
+      .input(z.object({ attachmentId: z.number().int().positive() }))
+      .query(async ({ ctx, input }) => {
+        const attachment = await archiveDb.getAttachmentOcrDetail(input.attachmentId);
+        if (!attachment) throw new TRPCError({ code: "NOT_FOUND", message: "لم يُعثر على المرفق المطلوب." });
+        if (attachment.documentType === "correspondence") await ensureRecordAccess(ctx.user, attachment.documentId);
+        else ensureCapability(isExecutiveRole(roleOf(ctx.user.role)) || canCreateDecisionOrCircular(roleOf(ctx.user.role)), "لا تملك صلاحية مراجعة نص OCR لهذا المرفق.");
+        return attachment;
+      }),
     upload: protectedProcedure
       .input(z.object({
         documentType: documentKind,
@@ -289,7 +300,7 @@ export const appRouter = router({
         const sanitized = input.fileName.replace(/[^a-zA-Z0-9._-]+/g, "-").slice(0, 160);
         const fileName = sanitized.includes(".") ? sanitized : `${sanitized}.${extensionForMimeType(input.mimeType)}`;
         const { key, url } = await storagePut(`tidc-archive/${input.documentType}/${input.documentId}/${Date.now()}-${fileName}`, buffer, input.mimeType);
-        await archiveDb.createAttachmentRecord({
+        const attachment = await archiveDb.createAttachmentRecord({
           documentType: input.documentType,
           documentId: input.documentId,
           fileKey: key,
@@ -300,7 +311,9 @@ export const appRouter = router({
           extractedText: input.extractedText || undefined,
           uploadedById: ctx.user.id,
         });
-        return { url, key, fileName: input.fileName };
+        const ocr = await enqueueLocalOcr({ attachmentId: attachment.id, fileKey: key, mimeType: input.mimeType });
+        if (ocr.status !== "pending") await archiveDb.updateAttachmentOcr({ attachmentId: attachment.id, status: ocr.status === "processing" ? "processing" : ocr.status, error: ocr.detail });
+        return { url, key, fileName: input.fileName, attachmentId: attachment.id, ocrStatus: ocr.status, ocrSupported: supportsLocalOcr(input.mimeType) };
       }),
   }),
 });
