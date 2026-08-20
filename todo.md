@@ -55,5 +55,5 @@
 - [x] Add an edit-and-reassignment interface for existing users’ role, department, office, and activation state.
 - [x] Add bootstrap verification tests for a local active administrator record without password-hash exposure.
 - [x] Validate the local administrator sign-in flow from credentials to an authenticated admin user-management session on desktop and mobile.
-- [ ] Save the completed local-account, office-scope, and user-management implementation as a GitHub-synchronized review checkpoint.
-- [ ] Record the resulting GitHub-synchronized checkpoint identifier in the verification notes.
+- [x] Save the completed local-account, office-scope, and user-management implementation as a GitHub-synchronized review checkpoint.
+- [x] Record the resulting GitHub-synchronized checkpoint identifier in the verification notes.
