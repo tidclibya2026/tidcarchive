@@ -57,3 +57,11 @@
 - [x] Validate the local administrator sign-in flow from credentials to an authenticated admin user-management session on desktop and mobile.
 - [x] Save the completed local-account, office-scope, and user-management implementation as a GitHub-synchronized review checkpoint.
 - [x] Record the resulting GitHub-synchronized checkpoint identifier in the verification notes.
+- [x] Extract the approved department and office structure from the project reference files.
+- [x] Import the approved departments and offices into the database without duplicate records and validate the hierarchy.
+- [x] Display the approved structure in user assignment controls and scope administrative accounts accordingly.
+- [x] Add account activity log listing with administrator filters and CSV export for authorized roles.
+- [x] Add tests for audit-log visibility, filtering, and export formatting.
+- [x] Prepare MinIO configuration guidance, bucket policy, backup procedure, and HTTPS reverse-proxy deployment instructions for the local server.
+- [ ] Save a post-readiness checkpoint after the organizational import, audit export, tests, and production build.
+- [ ] Record the operational readiness checkpoint identifier in the verification notes, then close the readiness review.

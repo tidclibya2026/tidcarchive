@@ -17,6 +17,7 @@ import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { storagePut } from "./storage";
 import { COOKIE_NAME, LOCAL_SESSION_COOKIE, ONE_YEAR_MS } from "@shared/const";
+import { exportAccountActivityCsv } from "../shared/audit";
 
 const correspondenceStatus = z.enum(["new", "referred", "in_progress", "completed", "archived"]);
 const priority = z.enum(["normal", "urgent", "confidential"]);
@@ -141,6 +142,21 @@ export const appRouter = router({
         ensureCapability(roleOf(ctx.user.role) === "admin", "إدارة الحسابات متاحة لمدير النظام فقط.");
         await archiveDb.updateManagedUser({ userId: input.userId, passwordHash: await hashLocalPassword(input.password), actorId: ctx.user.id, action: "password_reset" });
         return { success: true };
+      }),
+  }),
+  audit: router({
+    list: protectedProcedure
+      .input(z.object({ userId: z.number().int().positive().optional(), action: z.string().max(100).optional(), dateFrom: z.date().optional(), dateTo: z.date().optional() }).optional())
+      .query(({ ctx, input }) => {
+        ensureCapability(roleOf(ctx.user.role) === "admin", "سجل تدقيق الحسابات متاح لمدير النظام فقط.");
+        return archiveDb.listAccountActivity(input);
+      }),
+    exportCsv: protectedProcedure
+      .input(z.object({ userId: z.number().int().positive().optional(), action: z.string().max(100).optional(), dateFrom: z.date().optional(), dateTo: z.date().optional() }).optional())
+      .query(async ({ ctx, input }) => {
+        ensureCapability(roleOf(ctx.user.role) === "admin", "سجل تدقيق الحسابات متاح لمدير النظام فقط.");
+        const rows = await archiveDb.listAccountActivity(input);
+        return { fileName: `tidc-account-audit-${new Date().toISOString().slice(0, 10)}.csv`, csv: exportAccountActivityCsv(rows) };
       }),
   }),
   access: router({

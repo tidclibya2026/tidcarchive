@@ -1,6 +1,7 @@
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import ArchivePage from "@/pages/ArchivePage";
+import AuditPage from "@/pages/AuditPage";
 import CorrespondencePage from "@/pages/CorrespondencePage";
 import FollowUpPage from "@/pages/FollowUpPage";
 import Home from "@/pages/Home";
@@ -24,6 +25,7 @@ function Router() {
     <Route path="/archive" component={ArchivePage} />
     <Route path="/reports" component={ReportsPage} />
     <Route path="/users" component={UsersPage} />
+    <Route path="/audit" component={AuditPage} />
     <Route path="/login"><LocalLoginScreen /></Route>
     <Route path="/404" component={NotFound} />
     <Route component={NotFound} />

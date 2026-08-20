@@ -150,6 +150,25 @@ export async function updateManagedUser(input: {
   });
 }
 
+export async function listAccountActivity(input: { userId?: number; action?: string; dateFrom?: Date; dateTo?: Date } = {}) {
+  const db = requireDb(await getDb());
+  const conditions: SQL[] = [];
+  if (input.userId) conditions.push(eq(accountActivityLogs.userId, input.userId));
+  if (input.action) conditions.push(eq(accountActivityLogs.action, input.action));
+  if (input.dateFrom) conditions.push(gte(accountActivityLogs.createdAt, input.dateFrom));
+  if (input.dateTo) conditions.push(lte(accountActivityLogs.createdAt, input.dateTo));
+  const logs = await db.select().from(accountActivityLogs).where(and(...conditions)).orderBy(desc(accountActivityLogs.createdAt)).limit(1000);
+  const ids = Array.from(new Set(logs.flatMap(log => [log.userId, log.actorId].filter((id): id is number => typeof id === "number"))));
+  const people = ids.length ? await db.select({ id: users.id, name: users.name, email: users.email }).from(users).where(inArray(users.id, ids)) : [];
+  const directory = new Map(people.map(person => [person.id, person]));
+  return logs.map(log => ({
+    ...log,
+    userName: directory.get(log.userId)?.name || null,
+    userEmail: directory.get(log.userId)?.email || null,
+    actorName: log.actorId ? directory.get(log.actorId)?.name || null : null,
+  }));
+}
+
 export async function listDepartments() {
   const db = requireDb(await getDb());
   return db.select().from(departments).where(eq(departments.isActive, "yes")).orderBy(departments.nameAr);
