@@ -1,115 +1,40 @@
 <!doctype html>
 <html lang="ar" dir="rtl">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>نظام الأرشفة الإلكترونية | تدريب TIDC</title>
-  <style>
-    :root { --navy:#103548; --blue:#1b5e7a; --gold:#e9c87a; --ink:#17394d; --muted:#718793; --paper:#f5f6f1; --line:#dfe5dc; --success:#2f7d4b; --danger:#b64c36; font-family: Tahoma, Arial, sans-serif; }
-    * { box-sizing:border-box; } body { margin:0; min-height:100vh; background:var(--paper); color:var(--ink); }
-    button, input, select { font:inherit; } button { cursor:pointer; } .hidden { display:none !important; }
-    .login-shell { min-height:100vh; display:grid; place-items:center; padding:1.25rem; background:radial-gradient(circle at 85% 15%, #dcefed 0, transparent 27rem), var(--paper); }
-    .login-card { width:min(100%, 29rem); overflow:hidden; background:#fff; border:1px solid #d7ddd5; border-radius:2rem; box-shadow:0 25px 80px rgba(15,43,59,.12); }
-    .login-brand { padding:2rem; background:var(--navy); text-align:center; color:#fff; }
-    .mark { width:4.3rem; height:4.3rem; margin:auto; display:grid; place-items:center; border-radius:1.1rem; background:var(--gold); color:var(--navy); font-weight:900; font-size:1.15rem; box-shadow:0 10px 20px rgba(0,0,0,.15); }
-    .login-brand small { display:block; margin-top:1.1rem; color:var(--gold); font-size:.67rem; font-weight:bold; letter-spacing:.05em; }
-    .login-brand h1 { margin:.5rem 0 0; font-size:1.25rem; } .login-body { padding:1.5rem 1.75rem 1.75rem; }
-    .training-note { padding:.8rem 1rem; border-radius:.8rem; background:#f7faf8; color:#617b83; font-size:.75rem; line-height:1.8; }
-    label { display:grid; gap:.42rem; margin-top:1rem; color:#365967; font-size:.78rem; font-weight:bold; } input, select { width:100%; padding:.75rem .85rem; border:1px solid #cbd9d5; border-radius:.7rem; background:#fff; color:var(--ink); outline:none; } input:focus, select:focus { border-color:#2a6b7d; box-shadow:0 0 0 3px rgba(42,107,125,.12); }
-    .primary { width:100%; min-height:2.8rem; margin-top:1.25rem; border:0; border-radius:.72rem; background:var(--navy); color:#fff; font-size:.82rem; font-weight:bold; } .primary:hover { background:#17475d; }
-    .login-footer { margin-top:.9rem; text-align:center; color:#78909a; font-size:.68rem; }
-    .app { min-height:100vh; display:flex; } .sidebar { width:16rem; flex:0 0 16rem; padding:1.4rem .9rem; background:var(--navy); color:#dfe9eb; display:flex; flex-direction:column; gap:1rem; }
-    .side-brand { display:flex; align-items:center; gap:.75rem; padding:.45rem .6rem .95rem; border-bottom:1px solid rgba(255,255,255,.13); } .side-brand .mark { width:2.7rem; height:2.7rem; margin:0; border-radius:.72rem; font-size:.75rem; }
-    .side-brand strong { display:block; color:#fff; font-size:.82rem; } .side-brand span { display:block; margin-top:.2rem; color:var(--gold); font-size:.58rem; }
-    .menu-title { padding:.25rem .7rem; color:#8fb0b9; font-size:.63rem; font-weight:bold; letter-spacing:.08em; } .nav-list { display:grid; gap:.28rem; }
-    .nav-item { display:flex; align-items:center; gap:.7rem; width:100%; min-height:2.7rem; padding:0 .75rem; border:0; border-radius:.7rem; background:transparent; color:#c9dbdf; text-align:right; font-size:.78rem; }
-    .nav-item:hover { background:rgba(255,255,255,.09); color:#fff; } .nav-item.active { background:var(--gold); color:var(--navy); font-weight:bold; } .nav-icon { width:1.3rem; text-align:center; }
-    .side-user { margin-top:auto; padding:.75rem; border:1px solid rgba(255,255,255,.12); border-radius:1rem; background:rgba(255,255,255,.055); } .side-user b { display:block; color:#fff; font-size:.73rem; } .side-user span { color:#9bb9c0; font-size:.65rem; }
-    .workspace { min-width:0; flex:1; } .topbar { position:sticky; top:0; z-index:3; min-height:4.5rem; display:flex; align-items:center; justify-content:space-between; gap:1rem; padding:0 1.5rem; border-bottom:1px solid var(--line); background:rgba(245,246,241,.94); backdrop-filter:blur(12px); }
-    .topbar h2 { margin:0; font-size:1.05rem; } .topbar p { margin:.2rem 0 0; color:#8a9a9c; font-size:.65rem; } .training-pill { padding:.45rem .75rem; border:1px solid #e4ca85; border-radius:99rem; background:#fff4d6; color:#6e5420; font-size:.67rem; white-space:nowrap; }
-    main { max-width:78rem; margin:auto; padding:1.25rem; } .hero { position:relative; overflow:hidden; padding:1.5rem; border-radius:1.45rem; background:linear-gradient(130deg, var(--navy), #1b5972); color:#fff; box-shadow:0 18px 40px rgba(16,53,72,.15); }
-    .hero:after { content:""; position:absolute; width:19rem; height:19rem; border:1px solid rgba(233,200,122,.22); border-radius:50%; left:-8rem; top:-10rem; } .hero>* { position:relative; z-index:1; } .eyebrow { color:var(--gold); font-size:.65rem; font-weight:bold; letter-spacing:.09em; } .hero h3 { margin:.55rem 0 .4rem; font-size:clamp(1.25rem,3vw,1.8rem); } .hero p { max-width:43rem; margin:0; color:#d6e8e8; font-size:.78rem; line-height:1.9; }
-    .quick-actions { display:flex; flex-wrap:wrap; gap:.55rem; margin-top:1rem; } .quick-actions button { min-height:2.45rem; padding:0 .85rem; border:1px solid rgba(255,255,255,.23); border-radius:.65rem; background:rgba(255,255,255,.11); color:#fff; font-size:.72rem; } .quick-actions button:first-child { border-color:var(--gold); background:var(--gold); color:var(--navy); font-weight:bold; }
-    .notice { margin:1rem 0; padding:.75rem 1rem; border-right:4px solid var(--gold); border-radius:.8rem; background:#fff8e6; color:#715b28; font-size:.73rem; line-height:1.8; }
-    .metrics { display:grid; grid-template-columns:repeat(5, minmax(0, 1fr)); gap:.75rem; } .metric { padding:1rem; border:1px solid var(--line); border-radius:1rem; background:#fff; text-align:right; transition:.18s transform, .18s box-shadow; } .metric:hover { transform:translateY(-2px); box-shadow:0 9px 20px rgba(15,43,59,.08); } .metric small { color:#718793; font-size:.66rem; } .metric b { display:block; margin-top:.55rem; font-size:1.5rem; } .metric span { display:block; margin-top:.55rem; color:#78909a; font-size:.62rem; }
-    .grid-2 { display:grid; grid-template-columns:minmax(0,1.45fr) minmax(16rem,.75fr); gap:1rem; margin-top:1rem; } .card { border:1px solid var(--line); border-radius:1rem; background:#fff; overflow:hidden; } .card-head { display:flex; align-items:center; justify-content:space-between; gap:.75rem; padding:1rem; border-bottom:1px solid #e8ece6; } .card-head h3 { margin:0; font-size:.84rem; } .card-head small { color:#78909a; font-size:.65rem; } .card-body { padding:1rem; }
-    .record { display:flex; align-items:center; justify-content:space-between; gap:.8rem; padding:.85rem 0; border-bottom:1px solid #eef1ec; } .record:last-child { border:0; } .record b { display:block; font-size:.76rem; } .record small { display:block; margin-top:.25rem; color:#78909a; font-size:.63rem; } .tag { padding:.27rem .55rem; border-radius:99rem; background:#e8f2f4; color:#216379; font-size:.6rem; font-weight:bold; white-space:nowrap; }
-    .action-list { display:grid; gap:.6rem; } .action { display:flex; align-items:center; justify-content:space-between; width:100%; padding:.85rem; border:1px solid #dce6df; border-radius:.75rem; background:#f8fbf8; color:var(--ink); text-align:right; } .action span { display:block; color:#78909a; font-size:.63rem; margin-top:.18rem; }
-    .archive-page, .dashboard-page { display:none; } .archive-page.active, .dashboard-page.active { display:block; } .search-box { padding:.6rem; border:1px solid var(--line); border-radius:1rem; background:#fff; } .search-row { display:grid; grid-template-columns:minmax(0,1fr) auto auto; gap:.55rem; } .search-row button { padding:0 .9rem; border:0; border-radius:.65rem; background:var(--navy); color:#fff; font-size:.72rem; } .filter-grid { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:.65rem; margin-top:.85rem; padding-top:.85rem; border-top:1px solid #eef1ec; } .filter-grid label { margin:0; font-size:.65rem; } .filter-grid select { padding:.55rem; font-size:.7rem; }
-    .empty { padding:2rem; text-align:center; color:#718793; font-size:.78rem; } .toast { position:fixed; z-index:9; bottom:1rem; left:1rem; max-width:22rem; padding:.8rem 1rem; border-radius:.8rem; background:#17394d; color:#fff; box-shadow:0 14px 30px rgba(0,0,0,.18); font-size:.72rem; transform:translateY(130%); opacity:0; transition:.22s; } .toast.show { transform:translateY(0); opacity:1; }
-    .mobile-nav { display:none; }
-    @media (max-width:1050px) { .metrics { grid-template-columns:repeat(3,minmax(0,1fr)); } }
-    @media (max-width:760px) { .app { display:block; padding-bottom:4.3rem; } .sidebar { display:none; } .topbar { padding:0 1rem; min-height:4rem; } .training-pill { font-size:.58rem; } main { padding:1rem; } .hero { padding:1.25rem; border-radius:1.1rem; } .metrics { grid-template-columns:repeat(2,minmax(0,1fr)); } .metrics .metric:last-child { grid-column:span 2; } .grid-2 { grid-template-columns:1fr; } .mobile-nav { position:fixed; z-index:5; bottom:0; right:0; left:0; display:flex; justify-content:space-around; padding:.4rem .3rem max(.4rem, env(safe-area-inset-bottom)); border-top:1px solid var(--line); background:#fff; box-shadow:0 -5px 18px rgba(15,43,59,.08); } .mobile-nav button { border:0; background:transparent; color:#63808a; font-size:.62rem; } .mobile-nav button.active { color:var(--navy); font-weight:bold; } .search-row { grid-template-columns:1fr auto; } .search-row .filter-toggle { display:none; } .filter-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
-  </style>
-</head>
-<body>
-  <section id="login" class="login-shell">
-    <div class="login-card">
-      <div class="login-brand"><div class="mark">TIDC</div><small>دولة ليبيا · وزارة السياحة والصناعات التقليدية</small><h1>نظام الأرشفة الإلكترونية</h1></div>
-      <form id="training-login" class="login-body">
-        <div class="training-note"><strong>نسخة تدريبية للواجهة.</strong> لا تُرسل بيانات الدخول ولا تُحفظ أي معلومات في GitHub Pages. استخدمها للتعرّف على الشاشات والتنقل فقط.</div>
-        <label>البريد الإلكتروني<input type="email" dir="ltr" placeholder="name@tidc.ly" autocomplete="off" /></label>
-        <label>كلمة المرور<input type="password" dir="ltr" placeholder="••••••••" autocomplete="off" /></label>
-        <button class="primary" type="submit">دخول إلى بيئة التدريب</button>
-        <p class="login-footer">لتشغيل المعاملات الحقيقية والمرفقات والبحث الفعلي، استخدم خادم المنظومة الكامل.</p>
-      </form>
-    </div>
-  </section>
-
-  <section id="app" class="app hidden">
-    <aside class="sidebar">
-      <div class="side-brand"><div class="mark">TIDC</div><div><strong>نظام الأرشفة الإلكترونية</strong><span>مركز المعلومات والتوثيق السياحي</span></div></div>
-      <p class="menu-title">إدارة الوثائق</p>
-      <nav class="nav-list" aria-label="التنقل الرئيسي">
-        <button class="nav-item active" data-page="dashboard"><i class="nav-icon">▦</i>لوحة القيادة</button>
-        <button class="nav-item" data-page="incoming"><i class="nav-icon">↳</i>المراسلات الواردة</button>
-        <button class="nav-item" data-page="outgoing"><i class="nav-icon">↲</i>المراسلات الصادرة</button>
-        <button class="nav-item" data-page="decisions"><i class="nav-icon">⚖</i>القرارات الإدارية</button>
-        <button class="nav-item" data-page="circulars"><i class="nav-icon">▤</i>المناشير الداخلية</button>
-        <button class="nav-item" data-page="followup"><i class="nav-icon">✓</i>مكتب المتابعة</button>
-        <button class="nav-item" data-page="archive"><i class="nav-icon">⌕</i>الأرشيف والبحث</button>
-        <button class="nav-item" data-page="reports"><i class="nav-icon">▥</i>التقارير والمؤشرات</button>
-      </nav>
-      <div class="side-user"><b>حساب تدريب الواجهة</b><span>لا توجد جلسة حقيقية أو صلاحيات فعلية</span></div>
-    </aside>
-    <div class="workspace">
-      <header class="topbar"><div><h2 id="page-title">لوحة القيادة</h2><p>دولة ليبيا · وزارة السياحة والصناعات التقليدية</p></div><span class="training-pill">نسخة تدريبية · GitHub Pages</span></header>
-      <main>
-        <section id="dashboard-page" class="dashboard-page active">
-          <div class="hero"><span class="eyebrow">مركز المعلومات والتوثيق السياحي</span><h3>مرحبًا بك في بيئة تدريب المنظومة</h3><p>تعرّف على واجهة إدارة المراسلات والقرارات والمناشير والأرشيف ولوحة المتابعة. جميع الأرقام والبطاقات في هذه الصفحة عرض تدريبي لا يمثل سجلات المركز.</p><div class="quick-actions"><button data-action="تسجيل معاملة واردة">تسجيل وارد</button><button data-action="تسجيل معاملة صادرة">تسجيل صادر</button><button data-nav="archive">البحث في الأرشيف</button></div></div>
-          <div class="notice">في بيئة GitHub Pages تعمل الشاشات والتنقل فقط. إدخال المعاملات ورفع الملفات وOCR والصلاحيات والتقارير الحقيقية تتطلب خادم المنظومة وقاعدة البيانات.</div>
-          <div class="metrics"><div class="metric"><small>معاملات نشطة</small><b>١</b><span>بطاقة عرض تدريبية</span></div><div class="metric"><small>قيد المعالجة</small><b>٠</b><span>يتطلب خادمًا حقيقيًا</span></div><div class="metric"><small>متأخرة</small><b>٠</b><span>عرض حالة تدريبي</span></div><div class="metric"><small>منجزة</small><b>٠</b><span>عرض حالة تدريبي</span></div><div class="metric"><small>مؤرشفة</small><b>—</b><span>البحث الفعلي على الخادم</span></div></div>
-          <div class="grid-2"><section class="card"><div class="card-head"><div><h3>المعاملات النشطة</h3><small>مثال لشكل قائمة المتابعة</small></div><span class="tag">تدريب</span></div><div class="card-body"><div class="record"><div><b>معاملة تدريبية — واجهة فقط</b><small>رقم مرجعي توضيحي · لا يُحفظ</small></div><span class="tag">جديدة</span></div><div class="record"><div><b>تعرّف على مراحل الإحالة والمتابعة</b><small>تحتاج بيئة الخادم لإنشائها</small></div><span class="tag">عرض</span></div></div></section><section class="card"><div class="card-head"><h3>إجراء سريع</h3></div><div class="card-body"><div class="action-list"><button class="action" data-action="رفع ملف PDF"><div><b>رفع مستند</b><span>يتطلب تخزينًا آمنًا على الخادم</span></div>←</button><button class="action" data-nav="archive"><div><b>البحث المتقدم</b><span>اعرض نموذج المرشحات</span></div>←</button><button class="action" data-nav="reports"><div><b>التقارير والمؤشرات</b><span>عرض واجهة التقرير</span></div>←</button></div></div></section></div>
-        </section>
-        <section id="archive-page" class="archive-page">
-          <div class="hero"><span class="eyebrow">الأرشيف الرقمي الموحد</span><h3>البحث المتقدم في الأرشيف</h3><p>تعرض هذه الشاشة شكل البحث بالنوع والحالة والأولوية والإدارة والفترة الزمنية. الاستعلامات الفعلية لا تعمل في النسخة الثابتة.</p></div>
-          <div class="notice">لن يتم إرسال الكلمات أو المرشحات التي تدخلها هنا. البحث الفعلي، نطاق الصلاحية، ونتائج OCR متاحة فقط عبر خادم المنظومة الكامل.</div>
-          <div class="search-box"><div class="search-row"><input id="training-query" placeholder="مثال: عقد خدمات، هيئة السياحة، أو رقم المعاملة" /><button id="training-search">بحث</button><button class="filter-toggle" type="button">مرشحات</button></div><div class="filter-grid"><label>نوع الوثيقة<select><option>كل الوثائق</option><option>مراسلات واردة</option><option>مراسلات صادرة</option><option>قرارات إدارية</option><option>مناشير داخلية</option><option>مرفقات رقمية</option></select></label><label>الحالة<select><option>كل الحالات</option><option>جديدة</option><option>محالة</option><option>قيد المعالجة</option><option>منجزة</option><option>مؤرشفة</option></select></label><label>الأولوية<select><option>كل الأولويات</option><option>عادي</option><option>عاجل</option><option>سري</option></select></label><label>الإدارة أو المكتب<select><option>كل الجهات</option><option>مكتب المتابعة</option><option>إدارة التوثيق والأرشفة</option><option>إدارة تقنية المعلومات</option></select></label></div></div>
-          <div id="training-results" class="card" style="margin-top:1rem"><div class="empty">أدخل عبارة بحث لاستعراض شكل منطقة النتائج التدريبية.</div></div>
-        </section>
-        <section id="generic-page" class="archive-page"><div class="hero"><span class="eyebrow">واجهة تدريبية</span><h3 id="generic-title">إدارة الوثائق</h3><p>هذه شاشة عرض للتنقل والتدريب على عناصر الواجهة. إنشاء البيانات أو تعديلها أو رفع المرفقات غير متاح من GitHub Pages.</p></div><div class="notice">تتوفر هذه الوظائف بكاملها على خادم المنظومة: التحقق من المستخدم، الصلاحيات، قاعدة البيانات، التخزين المشفر، وOCR.</div><div class="card"><div class="empty">تم فتح نموذج واجهة <strong id="generic-label">إدارة الوثائق</strong> للتدريب على التنقل.</div></div></section>
-      </main>
-    </div>
-    <nav class="mobile-nav" aria-label="تنقل الهاتف"><button class="active" data-page="dashboard">الرئيسية</button><button data-page="incoming">الوارد</button><button data-page="archive">الأرشيف</button><button data-page="reports">التقارير</button></nav>
-  </section>
-  <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  <script>
-    const titles = {dashboard:'لوحة القيادة', incoming:'المراسلات الواردة', outgoing:'المراسلات الصادرة', decisions:'القرارات الإدارية', circulars:'المناشير الداخلية', followup:'مكتب المتابعة', archive:'الأرشيف والبحث', reports:'التقارير والمؤشرات'};
-    const app = document.getElementById('app'), login = document.getElementById('login'), toast = document.getElementById('toast');
-    const message = text => { toast.textContent = text; toast.classList.add('show'); clearTimeout(window.toastTimer); window.toastTimer=setTimeout(()=>toast.classList.remove('show'),3600); };
-    document.getElementById('training-login').addEventListener('submit', event => { event.preventDefault(); login.classList.add('hidden'); app.classList.remove('hidden'); message('تم فتح بيئة تدريب الواجهة. لا توجد جلسة دخول أو بيانات حقيقية.'); });
-    function activate(page) {
-      document.querySelectorAll('[data-page]').forEach(button => button.classList.toggle('active', button.dataset.page === page));
-      document.getElementById('page-title').textContent = titles[page] || 'واجهة تدريبية';
-      document.getElementById('dashboard-page').classList.toggle('active', page === 'dashboard');
-      document.getElementById('archive-page').classList.toggle('active', page === 'archive');
-      const generic = document.getElementById('generic-page'); generic.classList.toggle('active', page !== 'dashboard' && page !== 'archive');
-      if (page !== 'dashboard' && page !== 'archive') { document.getElementById('generic-title').textContent = titles[page]; document.getElementById('generic-label').textContent = titles[page]; }
-      window.scrollTo({top:0, behavior:'smooth'});
-    }
-    document.querySelectorAll('[data-page], [data-nav]').forEach(button => button.addEventListener('click', () => activate(button.dataset.page || button.dataset.nav)));
-    document.querySelectorAll('[data-action]').forEach(button => button.addEventListener('click', () => message('«' + button.dataset.action + '» متاح بصورته الكاملة على خادم المنظومة فقط.')));
-    document.getElementById('training-search').addEventListener('click', () => { const value=document.getElementById('training-query').value.trim(); document.getElementById('training-results').innerHTML = '<div class="card-head"><h3>نتائج البحث التدريبية</h3><small>لا يتم استدعاء قاعدة بيانات</small></div><div class="empty">' + (value ? 'تم استلام عبارة البحث «' + value.replace(/[<>]/g,'') + '» للعرض فقط. شغّل الخادم الكامل لإظهار النتائج الفعلية.' : 'أدخل عبارة بحث لاختبار واجهة النتائج.') + '</div>'; });
-  </script>
-</body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>نظام الأرشفة الإلكترونية | TIDC</title>
+    <style>
+      :root { font-family: Tahoma, Arial, sans-serif; color-scheme: light; }
+      * { box-sizing: border-box; }
+      body { margin: 0; background: #f5f6f1; color: #17394d; line-height: 1.9; }
+      header { padding: 4.5rem 1.5rem 3.75rem; color: #fff; text-align: center; background: linear-gradient(120deg, #103548, #1b5e7a); border-bottom: 4px solid #e9c87a; }
+      header p { margin: 0; color: #f3dfa0; font-size: .9rem; } h1 { margin: .6rem 0 0; font-size: clamp(2rem, 6vw, 3.5rem); }
+      .subtitle { max-width: 52rem; margin: 1rem auto 0; color: #e5f0ee; font-size: 1rem; }
+      main { max-width: 68rem; margin: auto; padding: 2rem 1rem 4rem; }
+      .notice { padding: 1.25rem 1.5rem; border-right: 5px solid #c49e47; border-radius: 1rem; background: #fff8e6; color: #5c4b20; }
+      .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: 1rem; margin-top: 1.25rem; }
+      article { padding: 1.35rem; border: 1px solid #dfe5dc; border-radius: 1rem; background: #fff; box-shadow: 0 8px 24px rgba(16, 53, 72, .06); }
+      h2 { margin: 0 0 .5rem; font-size: 1.1rem; color: #103548; } article p { margin: 0; color: #58717c; font-size: .9rem; }
+      a { display: inline-block; margin-top: 1.5rem; padding: .7rem 1.05rem; border-radius: .7rem; color: #fff; background: #103548; text-decoration: none; font-weight: bold; }
+      a:hover { background: #1b5e7a; } footer { padding: 1.4rem; color: #c9d7d8; background: #103548; text-align: center; font-size: .82rem; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <p>دولة ليبيا · وزارة السياحة والصناعات التقليدية</p>
+      <h1>نظام الأرشفة الإلكترونية والمتابعة</h1>
+      <p class="subtitle">مركز المعلومات والتوثيق السياحي (TIDC) — مراسلات، قرارات، مناشير، متابعة، أرشيف رقمي، وتقارير.</p>
+    </header>
+    <main>
+      <section class="notice"><strong>هذا المستودع يحفظ مصدر النظام فقط.</strong> تشغيل الأرشفة الفعلية يتطلب خادم التطبيق وقاعدة البيانات وتخزين المرفقات والمصادقة وOCR؛ وهي متاحة في نسخة النظام الخادمة وليس في GitHub Pages.</section>
+      <section class="grid">
+        <article><h2>محتوى النظام</h2><p>يشمل المستودع واجهة النظام والخادم ومخطط قاعدة البيانات وترحيلات البيانات وحزمة تشغيل الخادم المحلي والأدلة الفنية.</p></article>
+        <article><h2>التجربة الفعلية</h2><p>تسجيل المراسلات ورفع المستندات والبحث الفعلي والصلاحيات يتم عبر رابط النظام الخادم فقط، لا عبر صفحة GitHub الثابتة.</p></article>
+        <article><h2>حماية البيانات</h2><p>لا يحتوي المستودع على كلمات مرور أو مفاتيح تشفير أو ملفات بيئة أو مرفقات معاملات حقيقية.</p></article>
+      </section>
+      <a href="https://github.com/tidclibya2026/tidcarchive">فتح مستودع الكود</a>
+    </main>
+    <footer>التشغيل المؤسسي النهائي يتم على خادم المركز وفق إجراءات الاستلام الفني والحماية المعتمدة.</footer>
+  </body>
 </html>

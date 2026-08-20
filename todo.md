@@ -117,6 +117,10 @@
 - [x] Synchronize the latest advanced-search and dashboard updates to GitHub and verify the Pages workflow reflects the updated reference.
 - [x] Exercise advanced archive search with document-type and status filters against existing records, then verify result accuracy.
 - [x] Replace the GitHub Pages reference with an interactive static training view of the TIDC system interface, clearly separated from the live server-backed system.
+- [ ] Restore the full server-backed TIDC trial workflow with the existing Test document and remove the unwanted static GitHub Pages training interface.
+- [ ] Identify the supported stable hosting path for the full system, which requires server, database, storage, and authenticated document workflows.
+- [ ] Remove the static GitHub Pages training interface at the user's request and restore a repository-reference page only.
+- [ ] Verify the full server-backed system remains available with the existing Test document after the GitHub Pages change.
 - [x] Set tidc.ly as the default internal server name and retain tidc.com.ly as an optional institutional public-domain configuration.
 - [x] Add a Windows pre-flight diagnostic that validates Docker availability, disk capacity, ports, DNS resolution, and selected HTTPS mode before installation.
 - [x] Add an installation-status report that redacts secrets and records the local service, HTTPS header, and container health checks for handover.
