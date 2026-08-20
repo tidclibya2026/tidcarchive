@@ -43,3 +43,17 @@
 - [x] Add procedure-level tests that reject missing PDF payloads and invalid PDF signatures for official documents.
 - [x] Add a render test covering Arabic headings and labels shown by the reports page.
 - [x] Revalidate the branded reports page successfully on a mobile viewport after session stabilization.
+- [x] Define user-account, department, office, role, activation, and audit data relationships for local TIDC administration.
+- [x] Add database schema and migration for local credentials, user-to-office assignment, and account activity records.
+- [x] Implement a secure local email/password sign-in path with salted password hashes, signed sessions, and logout.
+- [x] Protect administrative procedures and existing archive procedures with institutional role and office scope checks.
+- [x] Build an Arabic administration screen for creating, activating, deactivating, and assigning users to departments and offices.
+- [x] Create the supplied primary administrator account with an encrypted password hash and no plaintext password storage.
+- [x] Add Vitest coverage for authentication, account activation, role scopes, and administrator bootstrap.
+- [x] Verify administrator and user-management workflows on desktop and mobile, then document local account operations.
+- [x] Apply office-aware authorization to decision, circular, archive-search, and reporting procedures where access is department-scoped.
+- [x] Add an edit-and-reassignment interface for existing users’ role, department, office, and activation state.
+- [x] Add bootstrap verification tests for a local active administrator record without password-hash exposure.
+- [x] Validate the local administrator sign-in flow from credentials to an authenticated admin user-management session on desktop and mobile.
+- [ ] Save the completed local-account, office-scope, and user-management implementation as a GitHub-synchronized review checkpoint.
+- [ ] Record the resulting GitHub-synchronized checkpoint identifier in the verification notes.

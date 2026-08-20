@@ -7,6 +7,8 @@ import Home from "@/pages/Home";
 import NotFound from "@/pages/NotFound";
 import OfficialDocumentsPage from "@/pages/OfficialDocumentsPage";
 import ReportsPage from "@/pages/ReportsPage";
+import UsersPage from "@/pages/UsersPage";
+import { LocalLoginScreen } from "@/components/LocalLoginScreen";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
@@ -21,6 +23,8 @@ function Router() {
     <Route path="/follow-up" component={FollowUpPage} />
     <Route path="/archive" component={ArchivePage} />
     <Route path="/reports" component={ReportsPage} />
+    <Route path="/users" component={UsersPage} />
+    <Route path="/login"><LocalLoginScreen /></Route>
     <Route path="/404" component={NotFound} />
     <Route component={NotFound} />
   </Switch>;

@@ -1,4 +1,4 @@
-import { AXIOS_TIMEOUT_MS, COOKIE_NAME, ONE_YEAR_MS, decodeOAuthState } from "@shared/const";
+import { AXIOS_TIMEOUT_MS, COOKIE_NAME, LOCAL_SESSION_COOKIE, ONE_YEAR_MS, decodeOAuthState } from "@shared/const";
 import { ForbiddenError } from "@shared/_core/errors";
 import axios, { type AxiosInstance } from "axios";
 import { parse as parseCookieHeader } from "cookie";
@@ -6,6 +6,7 @@ import type { Request } from "express";
 import { SignJWT, jwtVerify } from "jose";
 import type { User } from "../../drizzle/schema";
 import * as db from "../db";
+import { canAuthenticateLocalAccount } from "../localAuth";
 import { ENV } from "./env";
 import type {
   ExchangeTokenRequest,
@@ -23,6 +24,8 @@ export type SessionPayload = {
   appId: string;
   name: string;
 };
+
+type LocalSessionPayload = { kind: "local"; localUserId: number };
 
 const EXCHANGE_TOKEN_PATH = `/webdev.v1.WebDevAuthPublicService/ExchangeToken`;
 const GET_USER_INFO_PATH = `/webdev.v1.WebDevAuthPublicService/GetUserInfo`;
@@ -196,6 +199,26 @@ class SDKServer {
       .sign(secretKey);
   }
 
+  async createLocalSessionToken(userId: number, options: { expiresInMs?: number } = {}) {
+    const issuedAt = Date.now();
+    const expirationSeconds = Math.floor((issuedAt + (options.expiresInMs ?? ONE_YEAR_MS)) / 1000);
+    return new SignJWT({ kind: "local", localUserId: userId } satisfies LocalSessionPayload)
+      .setProtectedHeader({ alg: "HS256", typ: "JWT" })
+      .setExpirationTime(expirationSeconds)
+      .sign(this.getSessionSecret());
+  }
+
+  async verifyLocalSession(cookieValue: string | undefined | null) {
+    if (!cookieValue) return null;
+    try {
+      const { payload } = await jwtVerify(cookieValue, this.getSessionSecret(), { algorithms: ["HS256"] });
+      const record = payload as Record<string, unknown>;
+      return record.kind === "local" && typeof record.localUserId === "number" && Number.isInteger(record.localUserId) && record.localUserId > 0 ? record.localUserId : null;
+    } catch {
+      return null;
+    }
+  }
+
   async verifySession(
     cookieValue: string | undefined | null
   ): Promise<{ openId: string; appId: string; name: string } | null> {
@@ -258,6 +281,13 @@ class SDKServer {
   async authenticateRequest(req: Request): Promise<AuthenticatedUser> {
     // 1. Prefer the session cookie (regular OAuth login).
     const cookies = this.parseCookies(req.headers.cookie);
+    const localUserId = await this.verifyLocalSession(cookies.get(LOCAL_SESSION_COOKIE));
+    if (localUserId) {
+      const localUser = await db.getLocalUserById(localUserId);
+      if (!localUser || !canAuthenticateLocalAccount(localUser)) throw ForbiddenError("Invalid local session");
+      await db.updateUserLastSignedIn(localUser.id);
+      return localUser;
+    }
     let sessionToken = cookies.get(COOKIE_NAME);
 
     // 2. Fallback to the Authorization header (Preview auto-login via
@@ -310,6 +340,8 @@ class SDKServer {
     if (!user) {
       throw ForbiddenError("User not found");
     }
+
+    if (user.isActive !== "yes") throw ForbiddenError("Account is inactive");
 
     await db.upsertUser({
       openId: user.openId,

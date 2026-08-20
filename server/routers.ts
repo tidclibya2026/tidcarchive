@@ -1,4 +1,5 @@
 import { TRPCError } from "@trpc/server";
+import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import {
   canCreateDecisionOrCircular,
@@ -9,15 +10,18 @@ import {
   type InstitutionalRole,
 } from "../shared/archive";
 import * as archiveDb from "./db";
+import { canAuthenticateLocalAccount, hashLocalPassword, normalizeEmail, verifyLocalPassword } from "./localAuth";
 import { getSessionCookieOptions } from "./_core/cookies";
+import { sdk } from "./_core/sdk";
 import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { storagePut } from "./storage";
-import { COOKIE_NAME } from "@shared/const";
+import { COOKIE_NAME, LOCAL_SESSION_COOKIE, ONE_YEAR_MS } from "@shared/const";
 
 const correspondenceStatus = z.enum(["new", "referred", "in_progress", "completed", "archived"]);
 const priority = z.enum(["normal", "urgent", "confidential"]);
 const documentKind = z.enum(["correspondence", "decision", "circular"]);
+const institutionalEmail = z.string().trim().min(3).max(320).regex(/^[^\s@]+@[^\s@]+$/, "أدخل بريدًا إداريًا صالحًا.");
 const requiredPdf = z.object({
   fileName: z.string().trim().min(1).max(255),
   base64: z.string().min(20).max(16_000_000),
@@ -31,11 +35,18 @@ function ensureCapability(condition: boolean, message = "ليس لديك الإ�
   if (!condition) throw new TRPCError({ code: "FORBIDDEN", message });
 }
 
-function scopedDepartment(user: { role: string; departmentId: number | null }) {
-  return isExecutiveRole(roleOf(user.role)) ? undefined : user.departmentId || -1;
+function scopedDepartment(user: { role: string; departmentId: number | null; officeId: number | null }) {
+  return isExecutiveRole(roleOf(user.role)) ? undefined : user.officeId || user.departmentId || -1;
 }
 
-async function ensureRecordAccess(user: { role: string; departmentId: number | null }, correspondenceId: number) {
+function scopedInputDepartment(user: { role: string; departmentId: number | null; officeId: number | null }, requested?: number) {
+  const scope = scopedDepartment(user);
+  if (scope === undefined) return requested;
+  if (requested && requested !== scope) throw new TRPCError({ code: "FORBIDDEN", message: "لا يمكنك اختيار إدارة أو مكتب خارج نطاق حسابك." });
+  return scope;
+}
+
+async function ensureRecordAccess(user: { role: string; departmentId: number | null; officeId: number | null }, correspondenceId: number) {
   const departmentId = scopedDepartment(user);
   if (departmentId === undefined) return;
   const records = await archiveDb.getCorrespondenceList({ departmentId });
@@ -81,12 +92,56 @@ async function archiveOfficialPdf(input: {
 export const appRouter = router({
   system: systemRouter,
   auth: router({
-    me: publicProcedure.query(opts => opts.ctx.user),
+    me: publicProcedure.query(opts => opts.ctx.user ? archiveDb.toSafeUser(opts.ctx.user) : null),
     logout: publicProcedure.mutation(({ ctx }) => {
       const cookieOptions = getSessionCookieOptions(ctx.req);
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
+      ctx.res.clearCookie(LOCAL_SESSION_COOKIE, { ...cookieOptions, maxAge: -1 });
       return { success: true } as const;
     }),
+    localLogin: publicProcedure
+      .input(z.object({ email: institutionalEmail, password: z.string().min(1).max(128) }))
+      .mutation(async ({ ctx, input }) => {
+        const user = await archiveDb.getLocalUserByEmail(normalizeEmail(input.email));
+        const isValid = user && canAuthenticateLocalAccount(user) && await verifyLocalPassword(input.password, user.passwordHash);
+        if (!isValid || !user) throw new TRPCError({ code: "UNAUTHORIZED", message: "بيانات الدخول غير صحيحة أو الحساب غير نشط." });
+        const token = await sdk.createLocalSessionToken(user.id);
+        ctx.res.cookie(LOCAL_SESSION_COOKIE, token, { ...getSessionCookieOptions(ctx.req), maxAge: ONE_YEAR_MS });
+        await archiveDb.updateUserLastSignedIn(user.id);
+        return archiveDb.toSafeUser(user);
+      }),
+  }),
+  users: router({
+    list: protectedProcedure.query(({ ctx }) => {
+      ensureCapability(roleOf(ctx.user.role) === "admin", "إدارة الحسابات متاحة لمدير النظام فقط.");
+      return archiveDb.listManagedUsers();
+    }),
+    create: protectedProcedure
+      .input(z.object({ name: z.string().trim().min(3).max(240), email: institutionalEmail, password: z.string().min(10).max(128), role: z.enum(["admin", "director_general", "follow_up", "department_head", "staff"]), departmentId: z.number().int().positive().optional(), officeId: z.number().int().positive().optional() }))
+      .mutation(async ({ ctx, input }) => {
+        ensureCapability(roleOf(ctx.user.role) === "admin", "إدارة الحسابات متاحة لمدير النظام فقط.");
+        const email = normalizeEmail(input.email);
+        if (await archiveDb.getLocalUserByEmail(email)) throw new TRPCError({ code: "CONFLICT", message: "يوجد حساب محلي بهذا البريد الإلكتروني." });
+        const passwordHash = await hashLocalPassword(input.password);
+        const result = await archiveDb.createLocalUser({ ...input, email, passwordHash, openId: `local_${randomUUID()}`, actorId: ctx.user.id });
+        return result;
+      }),
+    update: protectedProcedure
+      .input(z.object({ userId: z.number().int().positive(), name: z.string().trim().min(3).max(240).optional(), role: z.enum(["admin", "director_general", "follow_up", "department_head", "staff"]).optional(), departmentId: z.number().int().positive().nullable().optional(), officeId: z.number().int().positive().nullable().optional(), isActive: z.enum(["yes", "no"]).optional() }))
+      .mutation(async ({ ctx, input }) => {
+        ensureCapability(roleOf(ctx.user.role) === "admin", "إدارة الحسابات متاحة لمدير النظام فقط.");
+        if (input.userId === ctx.user.id && input.isActive === "no") throw new TRPCError({ code: "BAD_REQUEST", message: "لا يمكن تعطيل الحساب الإداري الحالي." });
+        const { userId, ...changes } = input;
+        await archiveDb.updateManagedUser({ userId, ...changes, actorId: ctx.user.id, action: "account_updated" });
+        return { success: true };
+      }),
+    resetPassword: protectedProcedure
+      .input(z.object({ userId: z.number().int().positive(), password: z.string().min(10).max(128) }))
+      .mutation(async ({ ctx, input }) => {
+        ensureCapability(roleOf(ctx.user.role) === "admin", "إدارة الحسابات متاحة لمدير النظام فقط.");
+        await archiveDb.updateManagedUser({ userId: input.userId, passwordHash: await hashLocalPassword(input.password), actorId: ctx.user.id, action: "password_reset" });
+        return { success: true };
+      }),
   }),
   access: router({
     capabilities: protectedProcedure.query(({ ctx }) => ({
@@ -124,7 +179,7 @@ export const appRouter = router({
         dueAt: z.date().optional(),
         relatedIncomingId: z.number().int().positive().optional(),
       }))
-      .mutation(({ ctx, input }) => archiveDb.createCorrespondence({ ...input, createdById: ctx.user.id })),
+      .mutation(({ ctx, input }) => archiveDb.createCorrespondence({ ...input, currentDepartmentId: scopedInputDepartment(ctx.user, input.currentDepartmentId), createdById: ctx.user.id })),
     updateStatus: protectedProcedure
       .input(z.object({ correspondenceId: z.number().int().positive(), status: correspondenceStatus, note: z.string().max(2000).optional() }))
       .mutation(async ({ ctx, input }) => {
@@ -151,7 +206,7 @@ export const appRouter = router({
       }),
   }),
   decisions: router({
-    list: protectedProcedure.query(() => archiveDb.getDecisions()),
+    list: protectedProcedure.query(({ ctx }) => archiveDb.getDecisions(scopedDepartment(ctx.user))),
     create: protectedProcedure
       .input(z.object({
         subject: z.string().trim().min(3).max(1500),
@@ -164,13 +219,14 @@ export const appRouter = router({
       .mutation(async ({ ctx, input }) => {
         ensureCapability(canCreateDecisionOrCircular(roleOf(ctx.user.role)));
         const { pdf, ...document } = input;
-        const result = await archiveDb.createDecision({ ...document, createdById: ctx.user.id });
+        if (document.sourceCorrespondenceId) await ensureRecordAccess(ctx.user, document.sourceCorrespondenceId);
+        const result = await archiveDb.createDecision({ ...document, issuingDepartmentId: scopedInputDepartment(ctx.user, document.issuingDepartmentId), createdById: ctx.user.id });
         await archiveOfficialPdf({ documentType: "decision", documentId: result.id, fileName: pdf.fileName, base64: pdf.base64, extractedText: document.bodyText, uploadedById: ctx.user.id });
         return result;
       }),
   }),
   circulars: router({
-    list: protectedProcedure.query(() => archiveDb.getCirculars()),
+    list: protectedProcedure.query(({ ctx }) => archiveDb.getCirculars(scopedDepartment(ctx.user))),
     create: protectedProcedure
       .input(z.object({
         subject: z.string().trim().min(3).max(1500),
@@ -184,7 +240,8 @@ export const appRouter = router({
       .mutation(async ({ ctx, input }) => {
         ensureCapability(canCreateDecisionOrCircular(roleOf(ctx.user.role)));
         const { pdf, ...document } = input;
-        const result = await archiveDb.createCircular({ ...document, createdById: ctx.user.id });
+        if (document.sourceCorrespondenceId) await ensureRecordAccess(ctx.user, document.sourceCorrespondenceId);
+        const result = await archiveDb.createCircular({ ...document, issuingDepartmentId: scopedInputDepartment(ctx.user, document.issuingDepartmentId), createdById: ctx.user.id });
         await archiveOfficialPdf({ documentType: "circular", documentId: result.id, fileName: pdf.fileName, base64: pdf.base64, extractedText: document.bodyText, uploadedById: ctx.user.id });
         return result;
       }),

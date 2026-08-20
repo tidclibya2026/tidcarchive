@@ -18,7 +18,7 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
-import { startLogin } from "@/const";
+import { LocalLoginScreen } from "@/components/LocalLoginScreen";
 import { useIsMobile } from "@/hooks/useMobile";
 import {
   Archive,
@@ -31,6 +31,7 @@ import {
   LayoutDashboard,
   LogOut,
   ScrollText,
+  ShieldPlus,
 } from "lucide-react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from "./DashboardLayoutSkeleton";
@@ -61,21 +62,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const { loading, user } = useAuth();
 
   if (loading) return <DashboardLayoutSkeleton />;
-  if (!user) {
-    return (
-      <div dir="rtl" className="min-h-screen grid place-items-center bg-[#f5f6f1] p-5 text-center">
-        <div className="w-full max-w-md rounded-[2rem] border border-[#d7ddd5] bg-white p-9 shadow-[0_25px_80px_rgba(15,43,59,.12)]">
-          <div className="mx-auto mb-5 flex h-20 w-28 items-center justify-center">
-            <img src="/manus-storage/tidc_e88ddbec.png" alt="شعار مركز المعلومات والتوثيق السياحي" className="max-h-20 max-w-28 object-contain" />
-          </div>
-          <p className="text-xs font-bold tracking-[.08em] text-[#9a7a34]">دولة ليبيا · وزارة السياحة والصناعات التقليدية</p>
-          <h1 className="mt-4 text-2xl font-bold text-[#153448]">نظام الأرشفة الإلكترونية</h1>
-          <p className="mt-3 leading-7 text-muted-foreground">يلزم تسجيل الدخول للوصول إلى معاملات المركز وأرشيفه الرقمي.</p>
-          <Button onClick={() => startLogin()} className="mt-7 h-12 w-full bg-[#103548] text-white hover:bg-[#17475d]">تسجيل الدخول</Button>
-        </div>
-      </div>
-    );
-  }
+  if (!user) return <LocalLoginScreen />;
 
   return (
     <SidebarProvider>
@@ -124,6 +111,7 @@ function ArchiveSidebar() {
               </SidebarMenuItem>
             );
           })}
+          {user?.role === "admin" && <SidebarMenuItem><SidebarMenuButton isActive={location === "/users"} onClick={() => setLocation("/users")} tooltip="إدارة المستخدمين" className="h-11 rounded-xl px-3 text-slate-300 hover:bg-white/10 hover:text-white data-[active=true]:bg-[#e9c87a] data-[active=true]:text-[#103548] data-[active=true]:font-bold"><ShieldPlus className="h-[18px] w-[18px]" /><span>إدارة المستخدمين</span></SidebarMenuButton></SidebarMenuItem>}
         </SidebarMenu>
       </SidebarContent>
       <SidebarFooter className="p-4">

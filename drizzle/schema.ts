@@ -30,6 +30,9 @@ export const users = mysqlTable("users", {
   name: text("name"),
   email: varchar("email", { length: 320 }),
   loginMethod: varchar("loginMethod", { length: 64 }),
+  accountType: mysqlEnum("accountType", ["oauth", "local"]).default("oauth").notNull(),
+  passwordHash: varchar("passwordHash", { length: 512 }),
+  isActive: mysqlEnum("isActive", ["yes", "no"]).default("yes").notNull(),
   role: mysqlEnum("role", [
     "user",
     "admin",
@@ -39,10 +42,29 @@ export const users = mysqlTable("users", {
     "staff",
   ]).default("staff").notNull(),
   departmentId: int("departmentId").references(() => departments.id),
+  officeId: int("officeId").references(() => departments.id),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
-});
+  passwordChangedAt: timestamp("passwordChangedAt"),
+}, table => [
+  uniqueIndex("users_email_unique").on(table.email),
+  index("users_department_office_idx").on(table.departmentId, table.officeId),
+  index("users_account_state_idx").on(table.accountType, table.isActive),
+]);
+
+export const accountActivityLogs = mysqlTable(
+  "account_activity_logs",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    userId: int("userId").notNull().references(() => users.id),
+    actorId: int("actorId").references(() => users.id),
+    action: varchar("action", { length: 100 }).notNull(),
+    detail: text("detail"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  table => [index("account_activity_user_created_idx").on(table.userId, table.createdAt)],
+);
 
 export const correspondence = mysqlTable(
   "correspondence",

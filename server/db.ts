@@ -1,6 +1,7 @@
 import { and, desc, eq, gte, inArray, like, lte, or, sql, type SQL } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
+  accountActivityLogs,
   activityLogs,
   attachments,
   circularRecipients,
@@ -63,6 +64,90 @@ export async function getUserByOpenId(openId: string) {
   const db = requireDb(await getDb());
   const result = await db.select().from(users).where(eq(users.openId, openId)).limit(1);
   return result[0];
+}
+
+export function toSafeUser<T extends typeof users.$inferSelect>(user: T) {
+  const { passwordHash: _passwordHash, ...safe } = user;
+  return safe;
+}
+
+export async function getLocalUserByEmail(email: string) {
+  const db = requireDb(await getDb());
+  const result = await db.select().from(users).where(and(eq(users.email, email), eq(users.accountType, "local"))).limit(1);
+  return result[0];
+}
+
+export async function getLocalUserById(id: number) {
+  const db = requireDb(await getDb());
+  const result = await db.select().from(users).where(and(eq(users.id, id), eq(users.accountType, "local"))).limit(1);
+  return result[0];
+}
+
+export async function updateUserLastSignedIn(id: number) {
+  const db = requireDb(await getDb());
+  await db.update(users).set({ lastSignedIn: new Date() }).where(eq(users.id, id));
+}
+
+export async function listManagedUsers() {
+  const db = requireDb(await getDb());
+  const [accountRows, structure] = await Promise.all([db.select().from(users).orderBy(desc(users.createdAt)), db.select().from(departments)]);
+  const names = new Map(structure.map(item => [item.id, item.nameAr]));
+  return accountRows.map(user => ({
+    ...toSafeUser(user),
+    departmentName: user.departmentId ? names.get(user.departmentId) || null : null,
+    officeName: user.officeId ? names.get(user.officeId) || null : null,
+  }));
+}
+
+export async function createLocalUser(input: {
+  openId: string;
+  name: string;
+  email: string;
+  passwordHash: string;
+  role: "admin" | "director_general" | "follow_up" | "department_head" | "staff";
+  departmentId?: number;
+  officeId?: number;
+  actorId?: number;
+}) {
+  const db = requireDb(await getDb());
+  return db.transaction(async tx => {
+    const result = await tx.insert(users).values({
+      openId: input.openId,
+      name: input.name,
+      email: input.email,
+      loginMethod: "local-password",
+      accountType: "local",
+      passwordHash: input.passwordHash,
+      role: input.role,
+      departmentId: input.departmentId || null,
+      officeId: input.officeId || null,
+      isActive: "yes",
+      passwordChangedAt: new Date(),
+      lastSignedIn: new Date(),
+    });
+    const id = Number(result[0].insertId);
+    await tx.insert(accountActivityLogs).values({ userId: id, actorId: input.actorId || id, action: "account_created", detail: "تم إنشاء حساب محلي." });
+    return { id };
+  });
+}
+
+export async function updateManagedUser(input: {
+  userId: number;
+  name?: string;
+  role?: "admin" | "director_general" | "follow_up" | "department_head" | "staff";
+  departmentId?: number | null;
+  officeId?: number | null;
+  isActive?: "yes" | "no";
+  passwordHash?: string;
+  actorId: number;
+  action: string;
+}) {
+  const db = requireDb(await getDb());
+  const { userId, actorId, action, ...changes } = input;
+  await db.transaction(async tx => {
+    await tx.update(users).set({ ...changes, passwordChangedAt: changes.passwordHash ? new Date() : undefined }).where(eq(users.id, userId));
+    await tx.insert(accountActivityLogs).values({ userId, actorId, action });
+  });
 }
 
 export async function listDepartments() {
@@ -244,10 +329,11 @@ export async function updateCorrespondenceStatus(input: {
   });
 }
 
-export async function getDecisions() {
+export async function getDecisions(departmentId?: number) {
   const db = requireDb(await getDb());
+  const scope = departmentId ? eq(decisions.issuingDepartmentId, departmentId) : undefined;
   const [records, pdfFiles] = await Promise.all([
-    db.select().from(decisions).orderBy(desc(decisions.effectiveDate)),
+    db.select().from(decisions).where(scope).orderBy(desc(decisions.effectiveDate)),
     db.select({ documentId: attachments.documentId, fileName: attachments.fileName, fileUrl: attachments.fileUrl }).from(attachments).where(and(eq(attachments.documentType, "decision"), eq(attachments.mimeType, "application/pdf"))),
   ]);
   const archiveByDecision = new Map(pdfFiles.map(file => [file.documentId, file]));
@@ -282,10 +368,11 @@ export async function createDecision(input: {
   return { id, decisionNumber };
 }
 
-export async function getCirculars() {
+export async function getCirculars(departmentId?: number) {
   const db = requireDb(await getDb());
+  const scope = departmentId ? eq(circulars.issuingDepartmentId, departmentId) : undefined;
   const [records, pdfFiles] = await Promise.all([
-    db.select().from(circulars).orderBy(desc(circulars.issueDate)),
+    db.select().from(circulars).where(scope).orderBy(desc(circulars.issueDate)),
     db.select({ documentId: attachments.documentId, fileName: attachments.fileName, fileUrl: attachments.fileUrl }).from(attachments).where(and(eq(attachments.documentType, "circular"), eq(attachments.mimeType, "application/pdf"))),
   ]);
   const archiveByCircular = new Map(pdfFiles.map(file => [file.documentId, file]));
@@ -394,14 +481,19 @@ export async function searchArchive(query: string, departmentId?: number) {
   const term = `%${query.trim()}%`;
   const correspondenceResults = await getCorrespondenceList({ query, departmentId });
   const [decisionResults, circularResults, attachmentResults] = await Promise.all([
-    db.select({ record: decisions, linkedNumber: correspondence.referenceNumber, linkedSubject: correspondence.subject }).from(decisions).leftJoin(correspondence, eq(decisions.sourceCorrespondenceId, correspondence.id)).where(or(like(decisions.decisionNumber, term), like(decisions.subject, term), like(decisions.bodyText, term), like(correspondence.referenceNumber, term), like(correspondence.subject, term))).orderBy(desc(decisions.effectiveDate)),
-    db.select({ record: circulars, linkedNumber: correspondence.referenceNumber, linkedSubject: correspondence.subject }).from(circulars).leftJoin(correspondence, eq(circulars.sourceCorrespondenceId, correspondence.id)).where(or(like(circulars.circularNumber, term), like(circulars.subject, term), like(circulars.bodyText, term), like(correspondence.referenceNumber, term), like(correspondence.subject, term))).orderBy(desc(circulars.issueDate)),
+    db.select({ record: decisions, linkedNumber: correspondence.referenceNumber, linkedSubject: correspondence.subject }).from(decisions).leftJoin(correspondence, eq(decisions.sourceCorrespondenceId, correspondence.id)).where(and(departmentId ? eq(decisions.issuingDepartmentId, departmentId) : undefined, or(like(decisions.decisionNumber, term), like(decisions.subject, term), like(decisions.bodyText, term), like(correspondence.referenceNumber, term), like(correspondence.subject, term)))).orderBy(desc(decisions.effectiveDate)),
+    db.select({ record: circulars, linkedNumber: correspondence.referenceNumber, linkedSubject: correspondence.subject }).from(circulars).leftJoin(correspondence, eq(circulars.sourceCorrespondenceId, correspondence.id)).where(and(departmentId ? eq(circulars.issuingDepartmentId, departmentId) : undefined, or(like(circulars.circularNumber, term), like(circulars.subject, term), like(circulars.bodyText, term), like(correspondence.referenceNumber, term), like(correspondence.subject, term)))).orderBy(desc(circulars.issueDate)),
     db.select().from(attachments).where(or(like(attachments.fileName, term), like(attachments.extractedText, term))).orderBy(desc(attachments.createdAt)),
   ]);
+  const allowedAttachments = departmentId ? attachmentResults.filter(record =>
+    (record.documentType === "correspondence" && correspondenceResults.some(item => item.record.id === record.documentId)) ||
+    (record.documentType === "decision" && decisionResults.some(item => item.record.id === record.documentId)) ||
+    (record.documentType === "circular" && circularResults.some(item => item.record.id === record.documentId)),
+  ) : attachmentResults;
   return [
     ...correspondenceResults.map(({ record }) => ({ id: record.id, type: record.type, number: record.referenceNumber, subject: record.subject, date: record.documentDate, status: record.status })),
     ...decisionResults.map(({ record, linkedNumber, linkedSubject }) => ({ id: record.id, type: "decision" as const, number: record.decisionNumber, subject: linkedNumber ? `${record.subject} — مرجع: ${linkedNumber}${linkedSubject ? ` (${linkedSubject})` : ""}` : record.subject, date: record.effectiveDate, status: record.legalStatus })),
     ...circularResults.map(({ record, linkedNumber, linkedSubject }) => ({ id: record.id, type: "circular" as const, number: record.circularNumber, subject: linkedNumber ? `${record.subject} — مرجع: ${linkedNumber}${linkedSubject ? ` (${linkedSubject})` : ""}` : record.subject, date: record.issueDate, status: "issued" })),
-    ...attachmentResults.map(record => ({ id: record.id, type: "attachment" as const, number: record.fileName, subject: `مرفق رقمي: ${record.fileName}`, date: record.createdAt, status: record.documentType })),
+    ...allowedAttachments.map(record => ({ id: record.id, type: "attachment" as const, number: record.fileName, subject: `مرفق رقمي: ${record.fileName}`, date: record.createdAt, status: record.documentType })),
   ];
 }
