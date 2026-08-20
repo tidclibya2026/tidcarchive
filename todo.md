@@ -111,3 +111,4 @@
 - [x] Add a Windows pre-flight diagnostic that validates Docker availability, disk capacity, ports, DNS resolution, and selected HTTPS mode before installation.
 - [x] Add an installation-status report that redacts secrets and records the local service, HTTPS header, and container health checks for handover.
 - [x] Write and deliver an Arabic guide for downloading the package, installing to C:\Archiving, and understanding the installer and verification scripts.
+- [x] Analyze the supplied center-device IP inventory and document a privacy-preserving network plan for tidc.ly.
