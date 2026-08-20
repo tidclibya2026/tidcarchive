@@ -104,3 +104,6 @@
 - [x] Enable AES-256-GCM application-layer encryption before MinIO storage and add a local TLS reverse proxy configuration for encrypted client transport.
 - [x] Document malware-scanning integration, encrypted isolated backups, disaster-recovery testing, and dependency patching procedures for the administrative server.
 - [x] Add automated tests for the new security controls and validate the production build without exposing secrets.
+- [x] Configure tidc.com.ly as the default HTTPS hostname in the local installation package without publishing DNS records automatically.
+- [x] Document the DNS, certificate, firewall, and verification prerequisites for tidc.com.ly on the administrative server.
+- [ ] Verify tidc.com.ly from the center server after its DNS record and trusted TLS certificate are provisioned by the responsible administrator.

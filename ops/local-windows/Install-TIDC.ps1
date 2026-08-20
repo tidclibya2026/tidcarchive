@@ -43,8 +43,19 @@ if ($sourceRoot.Path -ne $targetRoot) {
 $localOps = Join-Path $InstallPath "ops\local-windows"
 $envPath = Join-Path $localOps ".env"
 if (-not (Test-Path $envPath)) {
-  $serverName = Read-Host "اسم DNS أو اسم الخادم لشهادة HTTPS [localhost]"
-  if ([string]::IsNullOrWhiteSpace($serverName)) { $serverName = "localhost" }
+  $serverName = Read-Host "اسم DNS لنظام TIDC [tidc.com.ly]"
+  if ([string]::IsNullOrWhiteSpace($serverName)) { $serverName = "tidc.com.ly" }
+  $tlsMode = Read-Host "نمط HTTPS: internal للشبكة الداخلية أو public للنطاق العام [internal]"
+  if ([string]::IsNullOrWhiteSpace($tlsMode)) { $tlsMode = "internal" }
+  if ($tlsMode -notin @("internal", "public")) { throw "اختر internal أو public فقط." }
+  $caddyfile = if ($tlsMode -eq "public") { "Caddyfile.public" } else { "Caddyfile" }
+  $httpPort = if ($tlsMode -eq "public") { 80 } else { 8080 }
+  $httpsPort = if ($tlsMode -eq "public") { 443 } else { $Port }
+  $acmeEmail = ""
+  if ($tlsMode -eq "public") {
+    $acmeEmail = Read-Host "البريد التشغيلي لمسؤول شهادات ACME"
+    if ([string]::IsNullOrWhiteSpace($acmeEmail)) { throw "يتطلب النمط العام بريداً تشغيلياً لشهادات ACME." }
+  }
   $adminEmail = Read-Host "البريد الإلكتروني لمدير النظام المحلي [admin@tidcarchiv]"
   if ([string]::IsNullOrWhiteSpace($adminEmail)) { $adminEmail = "admin@tidcarchiv" }
   do {
@@ -53,8 +64,12 @@ if (-not (Test-Path $envPath)) {
   } while ($adminPassword.Length -lt 10)
 
   @(
-    "TIDC_HTTPS_PORT=$Port",
+    "TIDC_TLS_MODE=$tlsMode",
+    "TIDC_CADDYFILE=$caddyfile",
     "TIDC_HOSTNAME=$serverName",
+    "TIDC_HTTP_PORT=$httpPort",
+    "TIDC_HTTPS_PORT=$httpsPort",
+    "TIDC_ACME_EMAIL=$acmeEmail",
     "MYSQL_ROOT_PASSWORD=$(New-TidcSecret)",
     "MYSQL_APP_PASSWORD=$(New-TidcSecret)",
     "MINIO_ROOT_USER=tidc_minio",
@@ -81,5 +96,6 @@ try {
   if ($LASTEXITCODE -ne 0) { throw "تعذر بدء خدمات النظام. راجع ملف السجل عبر Show-Logs.cmd." }
 } finally { Pop-Location }
 
-Write-Host "اكتمل التنصيب. افتح: https://$serverName`:$Port"
-Write-Host "يستخدم النظام HTTPS بشهادة داخلية. ثبّت شهادة Caddy الجذرية الموثوقة على أجهزة المركز قبل الاستخدام الشبكي."
+Write-Host "اكتمل التنصيب. افتح: https://$serverName`:$httpsPort"
+if ($tlsMode -eq "internal") { Write-Host "ثبّت شهادة Caddy الجذرية الموثوقة على أجهزة المركز قبل الاستخدام الشبكي. راجع docs\TIDC_DOMAIN_DEPLOYMENT.md." }
+else { Write-Host "تأكد من أن DNS العام والمنفذين 80 و443 موجهان إلى الخادم قبل انتظار شهادة ACME." }

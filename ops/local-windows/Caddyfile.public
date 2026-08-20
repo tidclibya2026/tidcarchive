@@ -1,0 +1,11 @@
+{
+  email {$TIDC_ACME_EMAIL}
+}
+
+{$TIDC_HOSTNAME} {
+  encode zstd gzip
+  request_body {
+    max_size 16MB
+  }
+  reverse_proxy app:3000
+}

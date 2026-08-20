@@ -1,6 +1,10 @@
 # هذا قالب إرشادي فقط. ينشئ Install-TIDC.ps1 ملف .env الفعلي بمفاتيح عشوائية ولا يحتفظ بكلمات المرور في المشروع.
+TIDC_TLS_MODE=internal
+TIDC_CADDYFILE=Caddyfile
+TIDC_HOSTNAME=tidc.com.ly
+TIDC_HTTP_PORT=8080
 TIDC_HTTPS_PORT=8443
-TIDC_HOSTNAME=localhost
+TIDC_ACME_EMAIL=security@tidc.com.ly
 MYSQL_ROOT_PASSWORD=REPLACE_WITH_RANDOM_SECRET
 MYSQL_APP_PASSWORD=REPLACE_WITH_RANDOM_SECRET
 MINIO_ROOT_USER=tidc_minio
