@@ -68,7 +68,7 @@
 - [x] Define secure OCR processing constraints for PDF and image attachments, including status tracking and indexed Arabic text storage.
 - [x] Implement OCR processing for uploaded PDF and image attachments and expose extracted text to the unified archive search.
 - [x] Add OCR status and extracted-text review indicators to attachment and archive interfaces.
-- [ ] Add tests for OCR queue inputs, safe text indexing, and archive search matches.
+- [x] Add tests for OCR queue inputs, safe text indexing, and archive search matches.
 - [x] Prepare a validated employee-import template for name, institutional email, role, department, office, and activation status.
 - [x] Import the user-supplied approved employee list and associate each account with its department or office without storing plaintext initial passwords.
 - [x] Design scheduled database and MinIO backup jobs with encrypted off-host retention and failure logging.

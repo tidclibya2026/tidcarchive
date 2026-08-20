@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-const mocks = vi.hoisted(() => ({ updateAttachmentOcr: vi.fn() }));
+const mocks = vi.hoisted(() => ({ updateAttachmentOcr: vi.fn(), fetch: vi.fn() }));
 vi.mock("./db", () => mocks);
 
 import { enqueueLocalOcr, receiveLocalOcrResult, supportsLocalOcr } from "./ocr";
@@ -12,6 +12,8 @@ afterEach(() => {
   process.env.LOCAL_OCR_ENDPOINT = originalEndpoint;
   process.env.LOCAL_OCR_SHARED_SECRET = originalSecret;
   mocks.updateAttachmentOcr.mockReset();
+  mocks.fetch.mockReset();
+  vi.unstubAllGlobals();
 });
 
 describe("عقد OCR المحلي", () => {
@@ -25,6 +27,20 @@ describe("عقد OCR المحلي", () => {
     delete process.env.LOCAL_OCR_ENDPOINT;
     delete process.env.LOCAL_OCR_SHARED_SECRET;
     await expect(enqueueLocalOcr({ attachmentId: 1, fileKey: "tidc/a.pdf", mimeType: "application/pdf" })).resolves.toMatchObject({ status: "pending" });
+  });
+
+  it("يرسل فقط بيانات المهمة المصرح بها إلى عامل OCR عند تهيئة الخدمة", async () => {
+    process.env.LOCAL_OCR_ENDPOINT = "http://ocr.local";
+    process.env.LOCAL_OCR_SHARED_SECRET = "test-ocr-secret";
+    mocks.fetch.mockResolvedValue({ ok: true });
+    vi.stubGlobal("fetch", mocks.fetch);
+
+    await expect(enqueueLocalOcr({ attachmentId: 7, fileKey: "tidc/7/file.pdf", mimeType: "application/pdf" })).resolves.toEqual({ status: "processing" });
+    expect(mocks.fetch).toHaveBeenCalledWith("http://ocr.local/v1/ocr/jobs", expect.objectContaining({
+      method: "POST",
+      headers: expect.objectContaining({ "X-TIDC-OCR-Secret": "test-ocr-secret" }),
+      body: JSON.stringify({ attachmentId: 7, fileKey: "tidc/7/file.pdf", mimeType: "application/pdf" }),
+    }));
   });
 
   it("يفهرس نص نتيجة OCR بعد تقليمه ولا يقبل طلبًا بلا سر مشترك", async () => {
