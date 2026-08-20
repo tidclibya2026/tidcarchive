@@ -43,11 +43,12 @@ if ($sourceRoot.Path -ne $targetRoot) {
 $localOps = Join-Path $InstallPath "ops\local-windows"
 $envPath = Join-Path $localOps ".env"
 if (-not (Test-Path $envPath)) {
-  $serverName = Read-Host "اسم DNS لنظام TIDC [tidc.com.ly]"
-  if ([string]::IsNullOrWhiteSpace($serverName)) { $serverName = "tidc.com.ly" }
   $tlsMode = Read-Host "نمط HTTPS: internal للشبكة الداخلية أو public للنطاق العام [internal]"
   if ([string]::IsNullOrWhiteSpace($tlsMode)) { $tlsMode = "internal" }
   if ($tlsMode -notin @("internal", "public")) { throw "اختر internal أو public فقط." }
+  $defaultServerName = if ($tlsMode -eq "public") { "tidc.com.ly" } else { "tidc.ly" }
+  $serverName = Read-Host "اسم DNS لنظام TIDC [$defaultServerName]"
+  if ([string]::IsNullOrWhiteSpace($serverName)) { $serverName = $defaultServerName }
   $caddyfile = if ($tlsMode -eq "public") { "Caddyfile.public" } else { "Caddyfile" }
   $httpPort = if ($tlsMode -eq "public") { 80 } else { 8080 }
   $httpsPort = if ($tlsMode -eq "public") { 443 } else { $Port }
