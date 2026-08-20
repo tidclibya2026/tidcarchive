@@ -43,6 +43,13 @@
       "when": 1787190895980,
       "tag": "0005_chilly_patriot",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1787228933260,
+      "tag": "0006_previous_romulus",
+      "breakpoints": true
     }
   ]
 }
