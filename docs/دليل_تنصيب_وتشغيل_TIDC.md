@@ -88,6 +88,20 @@ https://tidc.ly:8443
 
 يجب أن تظهر شاشة تسجيل الدخول أولاً. استخدم بريد المدير وكلمة المرور اللذين تم إدخالهما أثناء التنصيب.
 
+ينفذ ملف التنصيب تلقائياً فحصاً مسبقاً لـ Docker، والمساحة الحرة، والمنافذ، وذاكرة الجهاز، وحل اسم `tidc.ly` في DNS. يمكن تشغيله منفصلاً قبل التنصيب عند الحاجة:
+
+```powershell
+C:\Archiving\ops\local-windows\Test-TIDC-Preflight.ps1 -TlsMode internal -Hostname tidc.ly
+```
+
+ولإنشاء تقرير استلام لا يعرض الأسرار، شغّل:
+
+```powershell
+C:\Archiving\ops\local-windows\Test-TIDC-Installation.ps1 -WriteReport
+```
+
+يحفظ التقرير في `ops\local-windows\reports\` ويشمل حالة الحاويات ورؤوس الحماية فقط.
+
 ## 6. اعتماد شهادة HTTPS الداخلية
 
 في النمط الداخلي، تنشئ Caddy شهادة محلية لـ `tidc.ly`. حتى لا يظهر تحذير في أجهزة الموظفين، يصدر مسؤول الخادم شهادة الجذر وينشرها على أجهزة المركز المخولة فقط:
@@ -107,6 +121,7 @@ docker compose --env-file .env cp caddy:/data/caddy/pki/authorities/local/root.c
 | `Stop-TIDC.cmd` | يوقف الخدمات دون حذف قاعدة البيانات أو المرفقات. |
 | `Show-Logs.cmd` | يعرض سجلات التطبيق وMySQL وMinIO وOCR للتشخيص. |
 | `Test-TIDC-Installation.ps1` | يعيد التحقق من الخدمات والرؤوس الأمنية. |
+| `Test-TIDC-Preflight.ps1` | يفحص متطلبات الخادم وDNS والمنافذ قبل التنصيب. |
 
 لا تستخدم الأمر `docker compose down -v` لأن اللاحقة `-v` تحذف وحدات التخزين التي تحتوي قاعدة البيانات والمرفقات.
 

@@ -108,6 +108,6 @@
 - [x] Document the DNS, certificate, firewall, and verification prerequisites for tidc.com.ly on the administrative server.
 - [ ] Verify tidc.com.ly from the center server after its DNS record and trusted TLS certificate are provisioned by the responsible administrator.
 - [x] Set tidc.ly as the default internal server name and retain tidc.com.ly as an optional institutional public-domain configuration.
-- [ ] Add a Windows pre-flight diagnostic that validates Docker availability, disk capacity, ports, DNS resolution, and selected HTTPS mode before installation.
-- [ ] Add an installation-status report that redacts secrets and records the local service, HTTPS header, and container health checks for handover.
+- [x] Add a Windows pre-flight diagnostic that validates Docker availability, disk capacity, ports, DNS resolution, and selected HTTPS mode before installation.
+- [x] Add an installation-status report that redacts secrets and records the local service, HTTPS header, and container health checks for handover.
 - [x] Write and deliver an Arabic guide for downloading the package, installing to C:\Archiving, and understanding the installer and verification scripts.

@@ -33,6 +33,7 @@ Thumbs.db
 # Logs
 logs
 *.log
+ops/local-windows/reports/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*

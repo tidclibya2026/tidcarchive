@@ -57,6 +57,8 @@ if (-not (Test-Path $envPath)) {
     $acmeEmail = Read-Host "البريد التشغيلي لمسؤول شهادات ACME"
     if ([string]::IsNullOrWhiteSpace($acmeEmail)) { throw "يتطلب النمط العام بريداً تشغيلياً لشهادات ACME." }
   }
+  & (Join-Path $PSScriptRoot "Test-TIDC-Preflight.ps1") -TlsMode $tlsMode -Hostname $serverName -HttpPort $httpPort -HttpsPort $httpsPort
+  if ($LASTEXITCODE -ne 0) { throw "فشل الفحص المسبق. عالج البنود الظاهرة ثم أعد تشغيل التنصيب." }
   $adminEmail = Read-Host "البريد الإلكتروني لمدير النظام المحلي [admin@tidcarchiv]"
   if ([string]::IsNullOrWhiteSpace($adminEmail)) { $adminEmail = "admin@tidcarchiv" }
   do {
