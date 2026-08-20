@@ -10,7 +10,6 @@ import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { receiveLocalOcrResult } from "../ocr";
 import { configureSecurity } from "../security";
-import { registerOfficialPdfDownloadRoute } from "../officialPdfDownload";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -37,7 +36,6 @@ async function startServer() {
   configureSecurity(app);
   app.use(express.json({ limit: "16mb" }));
   app.use(express.urlencoded({ limit: "16mb", extended: true }));
-  registerOfficialPdfDownloadRoute(app);
   registerStorageProxy(app);
   registerOAuthRoutes(app);
   app.post("/api/internal/ocr/result", receiveLocalOcrResult);

@@ -7,7 +7,6 @@ import FollowUpPage from "@/pages/FollowUpPage";
 import Home from "@/pages/Home";
 import NotFound from "@/pages/NotFound";
 import OfficialDocumentsPage from "@/pages/OfficialDocumentsPage";
-import PdfDownloadMonitorPage from "@/pages/PdfDownloadMonitorPage";
 import ReportsPage from "@/pages/ReportsPage";
 import UsersPage from "@/pages/UsersPage";
 import { LocalLoginScreen } from "@/components/LocalLoginScreen";
@@ -48,7 +47,6 @@ function Router() {
     <Route path="/reports" component={ReportsPage} />
     <Route path="/users" component={UsersPage} />
     <Route path="/audit" component={AuditPage} />
-    <Route path="/pdf-downloads" component={PdfDownloadMonitorPage} />
     <Route path="/login" component={LoginRoute} />
     <Route path="/404" component={NotFound} />
     <Route component={NotFound} />

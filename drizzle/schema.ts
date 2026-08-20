@@ -190,22 +190,6 @@ export const attachments = mysqlTable(
   table => [index("attachments_document_idx").on(table.documentType, table.documentId), index("attachments_ocr_status_idx").on(table.ocrStatus)],
 );
 
-export const officialPdfDownloadLogs = mysqlTable(
-  "official_pdf_download_logs",
-  {
-    id: int("id").autoincrement().primaryKey(),
-    documentType: mysqlEnum("documentType", ["decision", "circular"]).notNull(),
-    documentId: int("documentId").notNull(),
-    userId: int("userId").notNull().references(() => users.id),
-    userRole: varchar("userRole", { length: 64 }).notNull(),
-    createdAt: timestamp("createdAt").defaultNow().notNull(),
-  },
-  table => [
-    index("official_pdf_download_document_created_idx").on(table.documentType, table.documentId, table.createdAt),
-    index("official_pdf_download_user_created_idx").on(table.userId, table.createdAt),
-  ],
-);
-
 export const activityLogs = mysqlTable(
   "activity_logs",
   {

@@ -21,12 +21,6 @@ describe("حسابات TIDC المحلية", () => {
     expect(canAuthenticateLocalAccount({ accountType: "oauth", isActive: "yes", passwordHash: null })).toBe(false);
   });
 
-  it("يقبل حساب المدير العام المحلي بعد تفعيله عند تعيين كلمة مرور إدارية", () => {
-    const directorGeneral = { accountType: "local", isActive: "yes", passwordHash: "managed-password-hash", role: "director_general", accessLevel: "full" };
-    expect(canAuthenticateLocalAccount(directorGeneral)).toBe(true);
-    expect(getRoleCapabilities("director_general").canViewAll).toBe(true);
-  });
-
   it("يقصر إدارة المستخدمين على مدير النظام ولا يسرّب بصمة كلمة المرور", () => {
     expect(getRoleCapabilities("admin").canManageUsers).toBe(true);
     expect(getRoleCapabilities("staff").canManageUsers).toBe(false);

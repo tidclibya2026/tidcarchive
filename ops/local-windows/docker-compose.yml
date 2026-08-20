@@ -128,7 +128,7 @@ services:
     environment:
       TIDC_HOSTNAME: ${TIDC_HOSTNAME}
     ports:
-      - "${TIDC_HTTP_BIND}:${TIDC_HTTP_PORT}:80"
+      - "${TIDC_HTTP_PORT}:80"
       - "${TIDC_HTTPS_PORT}:443"
     volumes:
       - ./${TIDC_CADDYFILE}:/etc/caddy/Caddyfile:ro

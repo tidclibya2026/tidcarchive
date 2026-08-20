@@ -168,14 +168,6 @@ export const appRouter = router({
         return { fileName: `tidc-account-audit-${new Date().toISOString().slice(0, 10)}.csv`, csv: exportAccountActivityCsv(rows) };
       }),
   }),
-  pdfDownloads: router({
-    list: protectedProcedure
-      .input(z.object({ userId: z.number().int().positive().optional(), documentType: z.enum(["decision", "circular"]).optional(), dateFrom: z.date().optional(), dateTo: z.date().optional() }).optional())
-      .query(({ ctx, input }) => {
-        ensureFullAccess(ctx.user);
-        return archiveDb.listOfficialPdfDownloads(input);
-      }),
-  }),
   access: router({
     capabilities: protectedProcedure.query(({ ctx }) => ({
       role: ctx.user.role,
