@@ -24,6 +24,7 @@ import {
   BellRing,
   ClipboardList,
   FileCheck2,
+  FileDown,
   FileInput,
   FileOutput,
   Files,
@@ -119,6 +120,7 @@ function ArchiveSidebar() {
           })}
           {user?.role === "admin" && <SidebarMenuItem><SidebarMenuButton isActive={location === "/users"} onClick={() => setLocation("/users")} tooltip="إدارة المستخدمين" className="h-11 rounded-xl px-3 text-slate-300 hover:bg-white/10 hover:text-white data-[active=true]:bg-[#e9c87a] data-[active=true]:text-[#103548] data-[active=true]:font-bold"><ShieldPlus className="h-[18px] w-[18px]" /><span>إدارة المستخدمين</span></SidebarMenuButton></SidebarMenuItem>}
           {user?.role === "admin" && <SidebarMenuItem><SidebarMenuButton isActive={location === "/audit"} onClick={() => setLocation("/audit")} tooltip="سجل تدقيق الحسابات" className="h-11 rounded-xl px-3 text-slate-300 hover:bg-white/10 hover:text-white data-[active=true]:bg-[#e9c87a] data-[active=true]:text-[#103548] data-[active=true]:font-bold"><ClipboardList className="h-[18px] w-[18px]" /><span>سجل التدقيق</span></SidebarMenuButton></SidebarMenuItem>}
+          {(user?.role === "admin" || user?.accessLevel === "full") && <SidebarMenuItem><SidebarMenuButton isActive={location === "/pdf-downloads"} onClick={() => setLocation("/pdf-downloads")} tooltip="مراقبة تنزيلات PDF" className="h-11 rounded-xl px-3 text-slate-300 hover:bg-white/10 hover:text-white data-[active=true]:bg-[#e9c87a] data-[active=true]:text-[#103548] data-[active=true]:font-bold"><FileDown className="h-[18px] w-[18px]" /><span>مراقبة تنزيلات PDF</span></SidebarMenuButton></SidebarMenuItem>}
         </SidebarMenu>
       </SidebarContent>
       <SidebarFooter className="p-4">

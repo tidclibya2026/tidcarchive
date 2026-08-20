@@ -10,6 +10,7 @@ import {
   decisions,
   departments,
   InsertUser,
+  officialPdfDownloadLogs,
   referrals,
   users,
 } from "../drizzle/schema";
@@ -420,6 +421,61 @@ export async function getOfficialPdfAttachment(documentType: "decision" | "circu
   if (!attachment[0]) return undefined;
 
   return { ...attachment[0], issuingDepartmentId: document[0].issuingDepartmentId };
+}
+
+export async function recordOfficialPdfDownload(input: {
+  documentType: "decision" | "circular";
+  documentId: number;
+  userId: number;
+  userRole: string;
+}) {
+  const db = requireDb(await getDb());
+  await db.insert(officialPdfDownloadLogs).values(input);
+}
+
+export async function listOfficialPdfDownloads(input: {
+  userId?: number;
+  documentType?: "decision" | "circular";
+  dateFrom?: Date;
+  dateTo?: Date;
+} = {}) {
+  const db = requireDb(await getDb());
+  const conditions: SQL[] = [];
+  if (input.userId) conditions.push(eq(officialPdfDownloadLogs.userId, input.userId));
+  if (input.documentType) conditions.push(eq(officialPdfDownloadLogs.documentType, input.documentType));
+  if (input.dateFrom) conditions.push(gte(officialPdfDownloadLogs.createdAt, input.dateFrom));
+  if (input.dateTo) conditions.push(lte(officialPdfDownloadLogs.createdAt, input.dateTo));
+  const logs = await db
+    .select({
+      id: officialPdfDownloadLogs.id,
+      documentType: officialPdfDownloadLogs.documentType,
+      documentId: officialPdfDownloadLogs.documentId,
+      userRole: officialPdfDownloadLogs.userRole,
+      createdAt: officialPdfDownloadLogs.createdAt,
+      userName: users.name,
+      userEmail: users.email,
+    })
+    .from(officialPdfDownloadLogs)
+    .leftJoin(users, eq(officialPdfDownloadLogs.userId, users.id))
+    .where(and(...conditions))
+    .orderBy(desc(officialPdfDownloadLogs.createdAt))
+    .limit(1000);
+
+  const decisionIds = Array.from(new Set(logs.filter(log => log.documentType === "decision").map(log => log.documentId)));
+  const circularIds = Array.from(new Set(logs.filter(log => log.documentType === "circular").map(log => log.documentId)));
+  const [decisionRows, circularRows] = await Promise.all([
+    decisionIds.length ? db.select({ id: decisions.id, documentNumber: decisions.decisionNumber, subject: decisions.subject }).from(decisions).where(inArray(decisions.id, decisionIds)) : [],
+    circularIds.length ? db.select({ id: circulars.id, documentNumber: circulars.circularNumber, subject: circulars.subject }).from(circulars).where(inArray(circulars.id, circularIds)) : [],
+  ]);
+  const records = new Map([
+    ...decisionRows.map(row => [`decision:${row.id}`, row] as const),
+    ...circularRows.map(row => [`circular:${row.id}`, row] as const),
+  ]);
+  return logs.map(log => ({
+    ...log,
+    documentNumber: records.get(`${log.documentType}:${log.documentId}`)?.documentNumber || `مستند ${log.documentId}`,
+    subject: records.get(`${log.documentType}:${log.documentId}`)?.subject || "لم يعد المستند متاحًا",
+  }));
 }
 
 export async function createCircular(input: {

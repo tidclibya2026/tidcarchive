@@ -68,6 +68,13 @@ export function registerOfficialPdfDownloadRoute(app: Express) {
         return;
       }
 
+      await archiveDb.recordOfficialPdfDownload({
+        documentType,
+        documentId,
+        userId: user.id,
+        userRole: user.role,
+      });
+
       setDownloadHeaders(res, attachment.fileName);
       if (!usesLocalS3Storage()) {
         res.redirect(307, await storageGetSignedUrl(attachment.fileKey));

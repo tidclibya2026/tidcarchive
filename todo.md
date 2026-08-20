@@ -131,3 +131,7 @@
 - [x] Confirm or implement a protected server-side decision/circular PDF download route with per-request authorization.
 - [x] Add tests proving authorized PDF download succeeds and out-of-scope access is denied.
 - [ ] Verify the authenticated browser download flow using the first real training decision or circular with an approved PDF, then record the result without creating a fictitious official record.
+- [x] Activate the Director General account with a clearly marked temporary institutional email and preserve full-system permissions.
+- [x] Add a database-backed audit record for each authorized official-PDF download without storing document contents, signed URLs, or credentials.
+- [x] Add an authorized administration view for PDF download monitoring with document, user, role, date, and filter metadata.
+- [x] Add automated coverage for PDF download audit creation, monitor visibility, and director-general account activation.

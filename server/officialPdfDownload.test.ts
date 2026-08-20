@@ -3,12 +3,16 @@ import { describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   authenticateRequest: vi.fn(),
   getOfficialPdfAttachment: vi.fn(),
+  recordOfficialPdfDownload: vi.fn(),
   storageGetSignedUrl: vi.fn(),
   usesLocalS3Storage: vi.fn(),
 }));
 
 vi.mock("./_core/sdk", () => ({ sdk: { authenticateRequest: mocks.authenticateRequest } }));
-vi.mock("./db", () => ({ getOfficialPdfAttachment: mocks.getOfficialPdfAttachment }));
+vi.mock("./db", () => ({
+  getOfficialPdfAttachment: mocks.getOfficialPdfAttachment,
+  recordOfficialPdfDownload: mocks.recordOfficialPdfDownload,
+}));
 vi.mock("./storage", () => ({
   storageGetSignedUrl: mocks.storageGetSignedUrl,
   usesLocalS3Storage: mocks.usesLocalS3Storage,
@@ -70,7 +74,7 @@ describe("تفويض تنزيل ملفات PDF الرسمية", () => {
   });
 
   it("يولّد تنزيلًا قصير المدة للحساب المخوّل بعد تحقق النطاق", async () => {
-    mocks.authenticateRequest.mockResolvedValueOnce({ role: "staff", accessLevel: "standard", departmentId: 7, officeId: null });
+    mocks.authenticateRequest.mockResolvedValueOnce({ id: 52, role: "staff", accessLevel: "standard", departmentId: 7, officeId: null });
     mocks.getOfficialPdfAttachment.mockResolvedValueOnce({ fileKey: "tidc-archive/decision/11/file.pdf", fileName: "قرار.pdf", mimeType: "application/pdf", issuingDepartmentId: 7 });
     mocks.usesLocalS3Storage.mockReturnValueOnce(false);
     mocks.storageGetSignedUrl.mockResolvedValueOnce("https://storage.example.test/signed-file");
@@ -79,6 +83,7 @@ describe("تفويض تنزيل ملفات PDF الرسمية", () => {
     await getDownloadHandler()({ params: { documentType: "decision", documentId: "11" } }, res);
 
     expect(mocks.storageGetSignedUrl).toHaveBeenCalledWith("tidc-archive/decision/11/file.pdf");
+    expect(mocks.recordOfficialPdfDownload).toHaveBeenCalledWith({ documentType: "decision", documentId: 11, userId: 52, userRole: "staff" });
     expect(res.redirect).toHaveBeenCalledWith(307, "https://storage.example.test/signed-file");
   });
 });
