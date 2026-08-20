@@ -113,6 +113,9 @@
 - [x] Complete consistent status filtering for all archive document types supported by the advanced search.
 - [x] Improve dashboard responsiveness and usability across mobile and desktop, including quick actions and compact status information.
 - [x] Add automated dashboard UI coverage for quick actions, KPI cards, and compact layout alongside completed visual verification.
+- [x] Diagnose and restore the development-preview URL after the reported connection refusal, then verify access externally.
+- [ ] Synchronize the latest advanced-search and dashboard updates to GitHub and verify the Pages workflow reflects the updated reference.
+- [ ] Exercise advanced archive search with document-type and status filters against existing records, then verify result accuracy.
 - [x] Set tidc.ly as the default internal server name and retain tidc.com.ly as an optional institutional public-domain configuration.
 - [x] Add a Windows pre-flight diagnostic that validates Docker availability, disk capacity, ports, DNS resolution, and selected HTTPS mode before installation.
 - [x] Add an installation-status report that redacts secrets and records the local service, HTTPS header, and container health checks for handover.
