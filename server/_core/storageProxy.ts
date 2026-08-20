@@ -23,6 +23,11 @@ export function registerStorageProxy(app: Express) {
       return;
     }
 
+    if (key.startsWith("tidc-archive/decision/") || key.startsWith("tidc-archive/circular/")) {
+      res.status(404).send("Stored file was not found");
+      return;
+    }
+
     if (usesLocalS3Storage()) {
       try {
         const object = await storageGetLocalObject(key);

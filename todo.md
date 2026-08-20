@@ -124,3 +124,10 @@
 - [ ] Define an isolated temporary training environment, data policy, participant access model, and local-server migration handover for staff training.
 - [x] Verify that the complete application source, local deployment package, and operating documentation remain synchronized in GitHub as the reference copy.
 - [ ] Verify and deliver a complete Arabic user journey covering password sign-in, roles, data entry, upload/camera capture, archive search, follow-up, and reports.
+- [x] Re-run and record a post-fix browser verification showing the root route renders correctly with no new React preamble/runtime errors.
+- [x] Capture a fresh post-fix browser-console check after reload and link it to the root-page rendering verification.
+- [ ] Perform and document an end-to-end training walkthrough for sign-in, correspondence entry, attachment upload/camera capture, archive search, follow-up, and reports.
+- [ ] Review checkpoint history, institutional accounts, and executive permissions, then verify and complete authorized PDF decision download support.
+- [x] Confirm or implement a protected server-side decision/circular PDF download route with per-request authorization.
+- [x] Add tests proving authorized PDF download succeeds and out-of-scope access is denied.
+- [ ] Verify the authenticated browser download flow using the first real training decision or circular with an approved PDF, then record the result without creating a fictitious official record.
