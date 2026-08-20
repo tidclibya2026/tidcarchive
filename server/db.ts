@@ -514,14 +514,50 @@ export async function getReportingAnalytics() {
   })), Number(decisionsResult[0]?.count || 0), Number(circularsResult[0]?.count || 0));
 }
 
-export async function searchArchive(query: string, departmentId?: number) {
+export async function searchArchive(input: {
+  query: string;
+  documentType?: "incoming" | "outgoing" | "decision" | "circular" | "attachment";
+  status?: "new" | "referred" | "in_progress" | "completed" | "archived" | "active" | "amended" | "cancelled";
+  priority?: "normal" | "urgent" | "confidential";
+  departmentId?: number;
+  dateFrom?: Date;
+  dateTo?: Date;
+}, scopedDepartmentId?: number) {
   const db = requireDb(await getDb());
-  const term = `%${query.trim()}%`;
-  const correspondenceResults = await getCorrespondenceList({ query, departmentId });
+  const term = `%${input.query.trim()}%`;
+  const departmentId = scopedDepartmentId ?? input.departmentId;
+  const correspondenceType = input.documentType === "incoming" || input.documentType === "outgoing" ? input.documentType : undefined;
+  const correspondenceStatus = ["new", "referred", "in_progress", "completed", "archived"].includes(input.status || "") ? input.status as "new" | "referred" | "in_progress" | "completed" | "archived" : undefined;
+  const decisionStatus = ["active", "amended", "cancelled"].includes(input.status || "") ? input.status as "active" | "amended" | "cancelled" : undefined;
+  const includeCorrespondence = (!input.documentType || Boolean(correspondenceType)) && (!input.status || Boolean(correspondenceStatus));
+  const includeDecisions = (!input.documentType || input.documentType === "decision") && (!input.status || Boolean(decisionStatus));
+  const includeCirculars = (!input.documentType || input.documentType === "circular") && !input.status;
+  const includeAttachments = (!input.documentType || input.documentType === "attachment") && !input.status;
+  const correspondenceResults = !includeCorrespondence
+    ? []
+    : await getCorrespondenceList({ query: input.query, type: correspondenceType, status: correspondenceStatus, priority: input.priority, departmentId, dateFrom: input.dateFrom, dateTo: input.dateTo });
+  const decisionConditions: SQL[] = [
+    departmentId ? eq(decisions.issuingDepartmentId, departmentId) : undefined,
+    input.documentType && input.documentType !== "decision" ? undefined : or(like(decisions.decisionNumber, term), like(decisions.subject, term), like(decisions.bodyText, term), like(correspondence.referenceNumber, term), like(correspondence.subject, term)),
+    input.dateFrom ? gte(decisions.effectiveDate, input.dateFrom) : undefined,
+    input.dateTo ? lte(decisions.effectiveDate, input.dateTo) : undefined,
+    decisionStatus ? eq(decisions.legalStatus, decisionStatus) : undefined,
+  ].filter((condition): condition is SQL => Boolean(condition));
+  const circularConditions: SQL[] = [
+    departmentId ? eq(circulars.issuingDepartmentId, departmentId) : undefined,
+    input.documentType && input.documentType !== "circular" ? undefined : or(like(circulars.circularNumber, term), like(circulars.subject, term), like(circulars.bodyText, term), like(correspondence.referenceNumber, term), like(correspondence.subject, term)),
+    input.dateFrom ? gte(circulars.issueDate, input.dateFrom) : undefined,
+    input.dateTo ? lte(circulars.issueDate, input.dateTo) : undefined,
+  ].filter((condition): condition is SQL => Boolean(condition));
+  const attachmentConditions: SQL[] = [
+    input.documentType && input.documentType !== "attachment" ? undefined : or(like(attachments.fileName, term), like(attachments.extractedText, term)),
+    input.dateFrom ? gte(attachments.createdAt, input.dateFrom) : undefined,
+    input.dateTo ? lte(attachments.createdAt, input.dateTo) : undefined,
+  ].filter((condition): condition is SQL => Boolean(condition));
   const [decisionResults, circularResults, attachmentResults] = await Promise.all([
-    db.select({ record: decisions, linkedNumber: correspondence.referenceNumber, linkedSubject: correspondence.subject }).from(decisions).leftJoin(correspondence, eq(decisions.sourceCorrespondenceId, correspondence.id)).where(and(departmentId ? eq(decisions.issuingDepartmentId, departmentId) : undefined, or(like(decisions.decisionNumber, term), like(decisions.subject, term), like(decisions.bodyText, term), like(correspondence.referenceNumber, term), like(correspondence.subject, term)))).orderBy(desc(decisions.effectiveDate)),
-    db.select({ record: circulars, linkedNumber: correspondence.referenceNumber, linkedSubject: correspondence.subject }).from(circulars).leftJoin(correspondence, eq(circulars.sourceCorrespondenceId, correspondence.id)).where(and(departmentId ? eq(circulars.issuingDepartmentId, departmentId) : undefined, or(like(circulars.circularNumber, term), like(circulars.subject, term), like(circulars.bodyText, term), like(correspondence.referenceNumber, term), like(correspondence.subject, term)))).orderBy(desc(circulars.issueDate)),
-    db.select().from(attachments).where(or(like(attachments.fileName, term), like(attachments.extractedText, term))).orderBy(desc(attachments.createdAt)),
+    !includeDecisions ? [] : db.select({ record: decisions, linkedNumber: correspondence.referenceNumber, linkedSubject: correspondence.subject }).from(decisions).leftJoin(correspondence, eq(decisions.sourceCorrespondenceId, correspondence.id)).where(and(...decisionConditions)).orderBy(desc(decisions.effectiveDate)),
+    !includeCirculars ? [] : db.select({ record: circulars, linkedNumber: correspondence.referenceNumber, linkedSubject: correspondence.subject }).from(circulars).leftJoin(correspondence, eq(circulars.sourceCorrespondenceId, correspondence.id)).where(and(...circularConditions)).orderBy(desc(circulars.issueDate)),
+    !includeAttachments ? [] : db.select().from(attachments).where(and(...attachmentConditions)).orderBy(desc(attachments.createdAt)),
   ]);
   const allowedAttachments = departmentId ? attachmentResults.filter(record =>
     (record.documentType === "correspondence" && correspondenceResults.some(item => item.record.id === record.documentId)) ||
@@ -529,9 +565,9 @@ export async function searchArchive(query: string, departmentId?: number) {
     (record.documentType === "circular" && circularResults.some(item => item.record.id === record.documentId)),
   ) : attachmentResults;
   return [
-    ...correspondenceResults.map(({ record }) => ({ id: record.id, type: record.type, number: record.referenceNumber, subject: record.subject, date: record.documentDate, status: record.status })),
-    ...decisionResults.map(({ record, linkedNumber, linkedSubject }) => ({ id: record.id, type: "decision" as const, number: record.decisionNumber, subject: linkedNumber ? `${record.subject} — مرجع: ${linkedNumber}${linkedSubject ? ` (${linkedSubject})` : ""}` : record.subject, date: record.effectiveDate, status: record.legalStatus })),
-    ...circularResults.map(({ record, linkedNumber, linkedSubject }) => ({ id: record.id, type: "circular" as const, number: record.circularNumber, subject: linkedNumber ? `${record.subject} — مرجع: ${linkedNumber}${linkedSubject ? ` (${linkedSubject})` : ""}` : record.subject, date: record.issueDate, status: "issued" })),
-    ...allowedAttachments.map(record => ({ id: record.id, type: "attachment" as const, number: record.fileName, subject: `مرفق رقمي: ${record.fileName}`, date: record.createdAt, status: record.documentType, ocrStatus: record.ocrStatus })),
+    ...correspondenceResults.map(({ record }) => ({ id: record.id, type: record.type, number: record.referenceNumber, subject: record.subject, date: record.documentDate, status: record.status, priority: record.priority })),
+    ...decisionResults.map(({ record, linkedNumber, linkedSubject }) => ({ id: record.id, type: "decision" as const, number: record.decisionNumber, subject: linkedNumber ? `${record.subject} — مرجع: ${linkedNumber}${linkedSubject ? ` (${linkedSubject})` : ""}` : record.subject, date: record.effectiveDate, status: record.legalStatus, priority: null })),
+    ...circularResults.map(({ record, linkedNumber, linkedSubject }) => ({ id: record.id, type: "circular" as const, number: record.circularNumber, subject: linkedNumber ? `${record.subject} — مرجع: ${linkedNumber}${linkedSubject ? ` (${linkedSubject})` : ""}` : record.subject, date: record.issueDate, status: "issued", priority: null })),
+    ...allowedAttachments.map(record => ({ id: record.id, type: "attachment" as const, number: record.fileName, subject: `مرفق رقمي: ${record.fileName}`, date: record.createdAt, status: record.documentType, ocrStatus: record.ocrStatus, priority: null })),
   ];
 }

@@ -109,6 +109,10 @@
 - [ ] Verify tidc.com.ly from the center server after its DNS record and trusted TLS certificate are provisioned by the responsible administrator.
 - [x] Repair the Vite React preamble error in the restored pre-network version so the archived system renders correctly.
 - [x] Synchronize the restored working pre-network version to the GitHub main branch and verify the remote revision.
+- [x] Verify the public GitHub Pages reference URL and record any page or deployment errors found.
+- [x] Complete consistent status filtering for all archive document types supported by the advanced search.
+- [x] Improve dashboard responsiveness and usability across mobile and desktop, including quick actions and compact status information.
+- [x] Add automated dashboard UI coverage for quick actions, KPI cards, and compact layout alongside completed visual verification.
 - [x] Set tidc.ly as the default internal server name and retain tidc.com.ly as an optional institutional public-domain configuration.
 - [x] Add a Windows pre-flight diagnostic that validates Docker availability, disk capacity, ports, DNS resolution, and selected HTTPS mode before installation.
 - [x] Add an installation-status report that redacts secrets and records the local service, HTTPS header, and container health checks for handover.

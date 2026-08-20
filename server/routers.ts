@@ -273,8 +273,16 @@ export const appRouter = router({
   }),
   archive: router({
     search: protectedProcedure
-      .input(z.object({ query: z.string().trim().min(2).max(200) }))
-      .query(({ ctx, input }) => archiveDb.searchArchive(input.query, scopedDepartment(ctx.user))),
+      .input(z.object({
+        query: z.string().trim().min(2).max(200),
+        documentType: z.enum(["incoming", "outgoing", "decision", "circular", "attachment"]).optional(),
+        status: z.enum(["new", "referred", "in_progress", "completed", "archived", "active", "amended", "cancelled"]).optional(),
+        priority: z.enum(["normal", "urgent", "confidential"]).optional(),
+        departmentId: z.number().int().positive().optional(),
+        dateFrom: z.date().optional(),
+        dateTo: z.date().optional(),
+      }).refine(input => !input.dateFrom || !input.dateTo || input.dateFrom <= input.dateTo, { message: "يجب أن يكون تاريخ البداية قبل تاريخ النهاية." }))
+      .query(({ ctx, input }) => archiveDb.searchArchive(input, scopedDepartment(ctx.user))),
   }),
   attachments: router({
     ocrDetail: protectedProcedure

@@ -31,7 +31,7 @@ describe("نطاق المكتب في الأرشيف", () => {
     await caller.correspondence.list({});
     expect(mocks.getDecisions).toHaveBeenCalledWith(9);
     expect(mocks.getCirculars).toHaveBeenCalledWith(9);
-    expect(mocks.searchArchive).toHaveBeenCalledWith("وثيقة", 9);
+    expect(mocks.searchArchive).toHaveBeenCalledWith(expect.objectContaining({ query: "وثيقة" }), 9);
     expect(mocks.getCorrespondenceList).toHaveBeenCalledWith(expect.objectContaining({ departmentId: 9 }));
   });
 
