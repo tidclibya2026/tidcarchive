@@ -33,9 +33,9 @@ export default function Home() {
           <div className="absolute bottom-0 left-0 h-px w-full bg-gradient-to-l from-transparent via-[#e9c87a]/70 to-transparent" />
           <div className="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div>
-              <div className="mb-3 flex items-center gap-2 text-xs font-bold text-[#e9c87a]"><Gauge className="h-4 w-4" /> ملخص تشغيلي لحظي</div>
-              <h1 className="text-2xl font-bold tracking-tight md:text-3xl">من البيانات إلى القرار</h1>
-              <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-300">متابعة مركزية للمراسلات والقرارات والمناشير، مع إبراز المعاملات المستحقة وإجراءات الإدارات.</p>
+              <div className="mb-3 flex items-center gap-2 text-xs font-bold text-[#e9c87a]"><Gauge className="h-4 w-4" /> دولة ليبيا · وزارة السياحة والصناعات التقليدية</div>
+              <h1 className="text-2xl font-bold tracking-tight md:text-3xl">نظام الأرشفة الإلكترونية</h1>
+              <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-300">مركز المعلومات والتوثيق السياحي — متابعة مركزية للمراسلات والقرارات والمناشير وإجراءات الإدارات.</p>
             </div>
             <div className="flex flex-wrap gap-3">
               <Button onClick={() => setLocation("/incoming?create=1")} className="h-11 bg-[#e9c87a] px-5 text-[#103548] hover:bg-[#f2d998]"><FilePlus2 className="ml-2 h-4 w-4" />تسجيل وارد</Button>

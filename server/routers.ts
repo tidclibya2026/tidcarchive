@@ -4,6 +4,7 @@ import {
   canCreateDecisionOrCircular,
   canRefer,
   getRoleCapabilities,
+  hasPdfSignature,
   isExecutiveRole,
   type InstitutionalRole,
 } from "../shared/archive";
@@ -17,6 +18,10 @@ import { COOKIE_NAME } from "@shared/const";
 const correspondenceStatus = z.enum(["new", "referred", "in_progress", "completed", "archived"]);
 const priority = z.enum(["normal", "urgent", "confidential"]);
 const documentKind = z.enum(["correspondence", "decision", "circular"]);
+const requiredPdf = z.object({
+  fileName: z.string().trim().min(1).max(255),
+  base64: z.string().min(20).max(16_000_000),
+});
 
 function roleOf(role: string): InstitutionalRole {
   return role as InstitutionalRole;
@@ -44,6 +49,35 @@ function extensionForMimeType(mimeType: string) {
   return "jpg";
 }
 
+async function archiveOfficialPdf(input: {
+  documentType: "decision" | "circular";
+  documentId: number;
+  fileName: string;
+  base64: string;
+  extractedText?: string;
+  uploadedById: number;
+}) {
+  const rawBase64 = input.base64.includes(",") ? input.base64.split(",").pop()! : input.base64;
+  const buffer = Buffer.from(rawBase64, "base64");
+  if (!buffer.length || buffer.length > 10 * 1024 * 1024) throw new TRPCError({ code: "BAD_REQUEST", message: "يجب أن يكون ملف PDF صالحًا وألا يتجاوز 10 ميغابايت." });
+  if (!hasPdfSignature(buffer)) throw new TRPCError({ code: "BAD_REQUEST", message: "الملف المرفق لا يحمل توقيع PDF صالحًا." });
+  const sanitized = input.fileName.replace(/[^a-zA-Z0-9._-]+/g, "-").slice(0, 160);
+  const fileName = sanitized.toLowerCase().endsWith(".pdf") ? sanitized : `${sanitized}.pdf`;
+  const { key, url } = await storagePut(`tidc-archive/${input.documentType}/${input.documentId}/${Date.now()}-${fileName}`, buffer, "application/pdf");
+  await archiveDb.createAttachmentRecord({
+    documentType: input.documentType,
+    documentId: input.documentId,
+    fileKey: key,
+    fileUrl: url,
+    fileName: input.fileName,
+    mimeType: "application/pdf",
+    sizeBytes: buffer.length,
+    extractedText: input.extractedText,
+    uploadedById: input.uploadedById,
+  });
+  return { url, key, fileName: input.fileName };
+}
+
 export const appRouter = router({
   system: systemRouter,
   auth: router({
@@ -66,6 +100,12 @@ export const appRouter = router({
   }),
   dashboard: router({
     overview: protectedProcedure.query(({ ctx }) => archiveDb.getDashboardData(scopedDepartment(ctx.user))),
+  }),
+  reports: router({
+    analytics: protectedProcedure.query(({ ctx }) => {
+      ensureCapability(isExecutiveRole(roleOf(ctx.user.role)), "التقارير الإدارية متاحة للمدير العام ومكتب المتابعة وإدارة تقنية المعلومات.");
+      return archiveDb.getReportingAnalytics();
+    }),
   }),
   correspondence: router({
     list: protectedProcedure
@@ -119,10 +159,14 @@ export const appRouter = router({
         effectiveDate: z.date(),
         issuingDepartmentId: z.number().int().positive().optional(),
         sourceCorrespondenceId: z.number().int().positive().optional(),
+        pdf: requiredPdf,
       }))
-      .mutation(({ ctx, input }) => {
+      .mutation(async ({ ctx, input }) => {
         ensureCapability(canCreateDecisionOrCircular(roleOf(ctx.user.role)));
-        return archiveDb.createDecision({ ...input, createdById: ctx.user.id });
+        const { pdf, ...document } = input;
+        const result = await archiveDb.createDecision({ ...document, createdById: ctx.user.id });
+        await archiveOfficialPdf({ documentType: "decision", documentId: result.id, fileName: pdf.fileName, base64: pdf.base64, extractedText: document.bodyText, uploadedById: ctx.user.id });
+        return result;
       }),
   }),
   circulars: router({
@@ -135,10 +179,14 @@ export const appRouter = router({
         issuingDepartmentId: z.number().int().positive().optional(),
         sourceCorrespondenceId: z.number().int().positive().optional(),
         targetDepartmentIds: z.array(z.number().int().positive()).max(100),
+        pdf: requiredPdf,
       }))
-      .mutation(({ ctx, input }) => {
+      .mutation(async ({ ctx, input }) => {
         ensureCapability(canCreateDecisionOrCircular(roleOf(ctx.user.role)));
-        return archiveDb.createCircular({ ...input, createdById: ctx.user.id });
+        const { pdf, ...document } = input;
+        const result = await archiveDb.createCircular({ ...document, createdById: ctx.user.id });
+        await archiveOfficialPdf({ documentType: "circular", documentId: result.id, fileName: pdf.fileName, base64: pdf.base64, extractedText: document.bodyText, uploadedById: ctx.user.id });
+        return result;
       }),
   }),
   archive: router({

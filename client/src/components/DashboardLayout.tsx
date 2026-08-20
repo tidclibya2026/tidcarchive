@@ -34,6 +34,7 @@ import {
 } from "lucide-react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from "./DashboardLayoutSkeleton";
+import { InstitutionalHeading } from "./InstitutionalHeading";
 import { Button } from "./ui/button";
 
 const menuItems = [
@@ -64,10 +65,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     return (
       <div dir="rtl" className="min-h-screen grid place-items-center bg-[#f5f6f1] p-5 text-center">
         <div className="w-full max-w-md rounded-[2rem] border border-[#d7ddd5] bg-white p-9 shadow-[0_25px_80px_rgba(15,43,59,.12)]">
-          <div className="mx-auto mb-6 grid h-16 w-16 place-items-center rounded-2xl bg-[#103548] text-[#e9c87a]">
-            <Archive className="h-8 w-8" />
+          <div className="mx-auto mb-5 flex h-20 w-28 items-center justify-center">
+            <img src="/manus-storage/tidc_e88ddbec.png" alt="شعار مركز المعلومات والتوثيق السياحي" className="max-h-20 max-w-28 object-contain" />
           </div>
-          <p className="text-xs font-bold tracking-[.18em] text-[#9a7a34]">TIDC · من البيانات إلى القرار</p>
+          <p className="text-xs font-bold tracking-[.08em] text-[#9a7a34]">دولة ليبيا · وزارة السياحة والصناعات التقليدية</p>
           <h1 className="mt-4 text-2xl font-bold text-[#153448]">نظام الأرشفة الإلكترونية</h1>
           <p className="mt-3 leading-7 text-muted-foreground">يلزم تسجيل الدخول للوصول إلى معاملات المركز وأرشيفه الرقمي.</p>
           <Button onClick={() => startLogin()} className="mt-7 h-12 w-full bg-[#103548] text-white hover:bg-[#17475d]">تسجيل الدخول</Button>
@@ -96,11 +97,11 @@ function ArchiveSidebar() {
       <SidebarHeader className="h-auto p-5 pt-7">
         <button onClick={() => setLocation("/")} className="flex w-full items-center gap-3 text-right focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e9c87a]">
           <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-[#e9c87a] text-[#103548] shadow-lg shadow-black/10">
-            <Archive className="h-5 w-5" />
+            <img src="/manus-storage/tidc_e88ddbec.png" alt="شعار TIDC" className="h-9 w-9 object-contain" />
           </div>
           <div className="min-w-0">
-            <p className="truncate text-sm font-bold tracking-tight text-white">نظام الأرشفة</p>
-            <p className="mt-0.5 truncate text-[10px] font-semibold tracking-[.14em] text-[#e9c87a]">TIDC · 2026</p>
+            <p className="truncate text-sm font-bold tracking-tight text-white">نظام الأرشفة الإلكترونية</p>
+            <p className="mt-0.5 truncate text-[10px] font-semibold tracking-[.08em] text-[#e9c87a]">مركز المعلومات والتوثيق السياحي</p>
           </div>
         </button>
       </SidebarHeader>
@@ -160,10 +161,7 @@ function ArchiveHeader() {
     <header className="sticky top-0 z-30 flex h-[72px] items-center justify-between border-b border-[#dfe5dc] bg-[#f5f6f1]/90 px-4 backdrop-blur md:px-7">
       <div className="flex items-center gap-3">
         {isMobile && <SidebarTrigger className="h-10 w-10 rounded-xl border border-[#d9e0d8] bg-white text-[#103548]" />}
-        <div>
-          <p className="text-[11px] font-bold tracking-[.15em] text-[#9a7a34]">مركز المعلومات والتوثيق السياحي</p>
-          <h2 className="mt-0.5 text-base font-bold text-[#16394d]">{current}</h2>
-        </div>
+        <InstitutionalHeading section={current} />
       </div>
       <div className="hidden items-center gap-2 rounded-xl border border-[#d9e0d8] bg-white px-3 py-2 text-xs font-medium text-[#527080] sm:flex">
         <BellRing className="h-4 w-4 text-[#b28937]" />

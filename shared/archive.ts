@@ -86,3 +86,40 @@ const statusTransitions: Record<WorkflowStatus, WorkflowStatus[]> = {
 export function isStatusTransitionAllowed(current: WorkflowStatus, next: WorkflowStatus) {
   return current === next || statusTransitions[current].includes(next);
 }
+
+type ReportSource = {
+  type: "incoming" | "outgoing";
+  departmentName?: string | null;
+  departmentType?: "office" | "department" | "unit" | null;
+  entityName?: string | null;
+};
+
+type ReportDistribution = { name: string; incoming: number; outgoing: number; total: number };
+
+export function summarizeReportData(records: ReportSource[], decisionCount: number, circularCount: number) {
+  const group = (items: ReportSource[], key: "departmentName" | "entityName") => Object.values(items.reduce<Record<string, ReportDistribution>>((groups, item) => {
+    const name = item[key] || "غير محددة";
+    const row = groups[name] || { name, incoming: 0, outgoing: 0, total: 0 };
+    row[item.type] += 1;
+    row.total += 1;
+    groups[name] = row;
+    return groups;
+  }, {})).sort((a, b) => b.total - a.total);
+  const incomingCount = records.filter(record => record.type === "incoming").length;
+  const outgoingCount = records.filter(record => record.type === "outgoing").length;
+  return {
+    documentTypes: [
+      { key: "incoming", label: "البريد الوارد", count: incomingCount },
+      { key: "outgoing", label: "البريد الصادر", count: outgoingCount },
+      { key: "decision", label: "القرارات", count: decisionCount },
+      { key: "circular", label: "المناشير", count: circularCount },
+    ],
+    byDepartment: group(records.filter(record => record.departmentType === "department"), "departmentName"),
+    byOffice: group(records.filter(record => record.departmentType === "office"), "departmentName"),
+    byEntity: group(records, "entityName").slice(0, 12),
+  };
+}
+
+export function hasPdfSignature(bytes: Uint8Array) {
+  return bytes.length >= 5 && bytes[0] === 0x25 && bytes[1] === 0x50 && bytes[2] === 0x44 && bytes[3] === 0x46 && bytes[4] === 0x2d;
+}

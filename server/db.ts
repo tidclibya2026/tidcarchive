@@ -12,7 +12,7 @@ import {
   referrals,
   users,
 } from "../drizzle/schema";
-import { calculateKpis, formatReferenceNumber, isStatusTransitionAllowed } from "../shared/archive";
+import { calculateKpis, formatReferenceNumber, isStatusTransitionAllowed, summarizeReportData } from "../shared/archive";
 import { ENV } from "./_core/env";
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -246,7 +246,12 @@ export async function updateCorrespondenceStatus(input: {
 
 export async function getDecisions() {
   const db = requireDb(await getDb());
-  return db.select().from(decisions).orderBy(desc(decisions.effectiveDate));
+  const [records, pdfFiles] = await Promise.all([
+    db.select().from(decisions).orderBy(desc(decisions.effectiveDate)),
+    db.select({ documentId: attachments.documentId, fileName: attachments.fileName, fileUrl: attachments.fileUrl }).from(attachments).where(and(eq(attachments.documentType, "decision"), eq(attachments.mimeType, "application/pdf"))),
+  ]);
+  const archiveByDecision = new Map(pdfFiles.map(file => [file.documentId, file]));
+  return records.map(record => ({ ...record, pdfArchive: archiveByDecision.get(record.id) || null }));
 }
 
 export async function createDecision(input: {
@@ -279,7 +284,12 @@ export async function createDecision(input: {
 
 export async function getCirculars() {
   const db = requireDb(await getDb());
-  return db.select().from(circulars).orderBy(desc(circulars.issueDate));
+  const [records, pdfFiles] = await Promise.all([
+    db.select().from(circulars).orderBy(desc(circulars.issueDate)),
+    db.select({ documentId: attachments.documentId, fileName: attachments.fileName, fileUrl: attachments.fileUrl }).from(attachments).where(and(eq(attachments.documentType, "circular"), eq(attachments.mimeType, "application/pdf"))),
+  ]);
+  const archiveByCircular = new Map(pdfFiles.map(file => [file.documentId, file]));
+  return records.map(record => ({ ...record, pdfArchive: archiveByCircular.get(record.id) || null }));
 }
 
 export async function createCircular(input: {
@@ -359,6 +369,24 @@ export async function getDashboardData(departmentId?: number) {
     workload,
     latestActions,
   };
+}
+
+export async function getReportingAnalytics() {
+  const db = requireDb(await getDb());
+  const [rows, decisionsResult, circularsResult] = await Promise.all([
+    db.select({ record: correspondence, departmentName: departments.nameAr, departmentType: departments.type })
+      .from(correspondence)
+      .leftJoin(departments, eq(correspondence.currentDepartmentId, departments.id)),
+    db.select({ count: sql<number>`count(*)` }).from(decisions),
+    db.select({ count: sql<number>`count(*)` }).from(circulars),
+  ]);
+
+  return summarizeReportData(rows.map(row => ({
+    type: row.record.type,
+    departmentName: row.departmentName,
+    departmentType: row.departmentType,
+    entityName: row.record.type === "incoming" ? row.record.sourceEntity : row.record.destinationEntity || row.record.sourceEntity,
+  })), Number(decisionsResult[0]?.count || 0), Number(circularsResult[0]?.count || 0));
 }
 
 export async function searchArchive(query: string, departmentId?: number) {

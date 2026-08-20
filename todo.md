@@ -30,3 +30,16 @@
 - [x] Add component rendering coverage and explicit workflow-transition rules to Vitest.
 - [x] Revalidate the Follow-Up page and document-capture screen through rendered desktop and mobile screenshots.
 - [x] Confirm the local deployment document exists and reflects the current prototype constraints.
+- [x] Update application branding with the State of Libya, Ministry of Tourism and Traditional Industries, TIDC names, and the supplied official logo.
+- [x] Add chart-ready reporting aggregates for incoming correspondence, outgoing correspondence, decisions, and circulars.
+- [x] Add report dimensions and charts for correspondence counts by department, office, and external/internal entity.
+- [x] Show separate incoming and outgoing mail volumes in the reports dashboard with Arabic labels and accessible chart legends.
+- [x] Require a PDF attachment when creating an administrative decision or internal circular and store its archive metadata securely.
+- [x] Add PDF attachment upload controls and archive indicators to the decision and circular management screens.
+- [x] Add tests and responsive visual verification for branding, reporting aggregates, and required PDF archival flows.
+- [x] Add Vitest coverage for required PDF archive validation, including rejection of an invalid PDF signature.
+- [x] Add component rendering coverage for the branded institutional heading and report page labels.
+- [x] Verify branded reports and the required PDF archive flow on a mobile viewport.
+- [x] Add procedure-level tests that reject missing PDF payloads and invalid PDF signatures for official documents.
+- [x] Add a render test covering Arabic headings and labels shown by the reports page.
+- [x] Revalidate the branded reports page successfully on a mobile viewport after session stabilization.
