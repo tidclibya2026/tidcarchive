@@ -135,3 +135,4 @@
 - [x] Add a database-backed audit record for each authorized official-PDF download without storing document contents, signed URLs, or credentials.
 - [x] Add an authorized administration view for PDF download monitoring with document, user, role, date, and filter metadata.
 - [x] Add automated coverage for PDF download audit creation, monitor visibility, and director-general account activation.
+- [x] Diagnose the reported GitHub availability issue, repair the reference Pages deployment if needed, and verify the published URL.
