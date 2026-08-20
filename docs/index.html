@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="نظام الأرشفة الإلكترونية والمتابعة لمركز المعلومات والتوثيق السياحي TIDC." />
+    <title>نظام الأرشفة الإلكترونية | TIDC</title>
+    <style>
+      :root {
+        --navy: #083b61;
+        --blue: #1e6596;
+        --gold: #d4a72c;
+        --mist: #eef5f8;
+        --ink: #142431;
+        --muted: #4c6473;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        color: var(--ink);
+        background: linear-gradient(160deg, #f4f9fb 0%, #ffffff 45%, #edf4f7 100%);
+        font-family: Tahoma, Arial, sans-serif;
+        line-height: 1.8;
+      }
+      .hero {
+        min-height: 320px;
+        padding: 56px 24px 44px;
+        color: #fff;
+        background: radial-gradient(circle at 78% 20%, #2d779e 0, transparent 34%), linear-gradient(130deg, #052f4d, #0a527e);
+        border-bottom: 5px solid var(--gold);
+      }
+      .wrap { width: min(1100px, 100%); margin: 0 auto; }
+      .eyebrow { margin: 0 0 9px; color: #f7d878; font-size: .86rem; font-weight: 700; letter-spacing: .03em; }
+      h1 { margin: 0; font-size: clamp(1.8rem, 4vw, 3.1rem); line-height: 1.35; }
+      .subtitle { max-width: 760px; margin: 15px 0 0; color: #dcecf4; font-size: 1.08rem; }
+      main { padding: 34px 24px 58px; }
+      .notice {
+        padding: 18px 20px;
+        margin: 0 0 28px;
+        color: #553f05;
+        background: #fff8df;
+        border-right: 5px solid var(--gold);
+        border-radius: 10px;
+      }
+      .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+      .card { padding: 22px; background: #fff; border: 1px solid #d8e4ea; border-radius: 14px; box-shadow: 0 10px 28px rgba(7, 55, 88, .07); }
+      .card h2 { margin: 0 0 10px; color: var(--navy); font-size: 1.15rem; }
+      .card p { margin: 0; color: var(--muted); font-size: .95rem; }
+      .section { margin-top: 34px; padding: 28px; background: #fff; border-radius: 14px; border: 1px solid #d8e4ea; }
+      .section h2 { margin: 0 0 10px; color: var(--navy); }
+      ul { margin: 12px 0 0; padding-right: 22px; }
+      a { color: #075b8e; font-weight: 700; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+      .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 20px; }
+      .button { display: inline-block; padding: 10px 17px; color: #fff; background: var(--navy); border-radius: 8px; text-decoration: none; }
+      .button.alt { color: var(--navy); background: #dcecf4; }
+      footer { padding: 24px; text-align: center; color: #657987; font-size: .88rem; }
+      @media (max-width: 760px) { .grid { grid-template-columns: 1fr; } .hero { min-height: 0; } }
+    </style>
+  </head>
+  <body>
+    <header class="hero">
+      <div class="wrap">
+        <p class="eyebrow">دولة ليبيا · وزارة السياحة والصناعات التقليدية</p>
+        <h1>نظام الأرشفة الإلكترونية والمتابعة</h1>
+        <p class="subtitle">مركز المعلومات والتوثيق السياحي (TIDC) — إدارة المراسلات والقرارات والمناشير والإحالات والأرشيف الرقمي والتقارير.</p>
+      </div>
+    </header>
+    <main>
+      <div class="wrap">
+        <section class="notice">
+          <strong>هذه صفحة تعريفية للمستودع فقط.</strong> نظام TIDC الكامل يتطلب خادماً وقاعدة بيانات وتخزين مرفقات وOCR، لذلك لا يعمل من GitHub Pages. يستخدم المستودع لحفظ الكود والوثائق وحزمة التشغيل المعتمدة.
+        </section>
+        <section class="grid" aria-label="مكونات النظام">
+          <article class="card"><h2>المراسلات ودورة العمل</h2><p>تسجيل الوارد والصادر، الإحالات، الأولويات، المواعيد، وسجل النشاط والمتابعة.</p></article>
+          <article class="card"><h2>الأرشيف والمرفقات</h2><p>رفع PDF والصور، التصوير من الهاتف، فحص الملفات، OCR عربي، والبحث في النص المستخرج.</p></article>
+          <article class="card"><h2>المستخدمون والتقارير</h2><p>صلاحيات مؤسسية، إدارة المستخدمين، سجل تدقيق، ولوحات وتقارير إدارية عربية.</p></article>
+        </section>
+        <section class="section">
+          <h2>استخدام المستودع</h2>
+          <p>يحفظ المستودع مصدر الواجهة والخادم ومخطط قاعدة البيانات وحزمة تشغيل الخادم المحلي والأدلة الفنية. لا يحفظ كلمات المرور أو ملف <code>.env</code> أو مفاتيح التشفير أو مرفقات المعاملات الحقيقية.</p>
+          <ul>
+            <li>التدريب العملي يحتاج بيئة تطبيق كاملة ببيانات تدريب منفصلة.</li>
+            <li>التشغيل النهائي يتم على خادم المركز باسم <code>tidc.ly</code> بعد الاستلام الفني.</li>
+            <li>لا تفتح قاعدة البيانات أو MinIO أو OCR مباشرة إلى شبكة المستخدمين.</li>
+          </ul>
+          <div class="actions">
+            <a class="button" href="https://github.com/tidclibya2026/tidcarchive">فتح مستودع الكود</a>
+            <a class="button alt" href="https://github.com/tidclibya2026/tidcarchive/tree/main/docs">أدلة التشغيل</a>
+          </div>
+        </section>
+      </div>
+    </main>
+    <footer>© مركز المعلومات والتوثيق السياحي — TIDC</footer>
+  </body>
+</html>
