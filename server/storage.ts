@@ -1,8 +1,41 @@
-// Preconfigured storage helpers for Manus WebDev templates
-// Uploads via Forge Server presigned URL to S3 (PUT direct).
-// Downloads return /manus-storage/{key} paths served via 307 redirect.
-
+import { GetObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { ENV } from "./_core/env";
+
+type LocalStorageConfig = {
+  endpoint: string;
+  accessKey: string;
+  secretKey: string;
+  bucket: string;
+  region: string;
+};
+
+let localClient: S3Client | null = null;
+
+function getLocalStorageConfig(): LocalStorageConfig | null {
+  const endpoint = process.env.S3_ENDPOINT?.trim();
+  const accessKey = process.env.S3_ACCESS_KEY?.trim();
+  const secretKey = process.env.S3_SECRET_KEY?.trim();
+  const bucket = process.env.S3_BUCKET?.trim();
+  if (!endpoint || !accessKey || !secretKey || !bucket) return null;
+  return { endpoint, accessKey, secretKey, bucket, region: process.env.S3_REGION?.trim() || "us-east-1" };
+}
+
+function getLocalClient(config: LocalStorageConfig) {
+  if (!localClient) {
+    localClient = new S3Client({
+      endpoint: config.endpoint,
+      forcePathStyle: true,
+      region: config.region,
+      credentials: { accessKeyId: config.accessKey, secretAccessKey: config.secretKey },
+    });
+  }
+  return localClient;
+}
+
+export function usesLocalS3Storage() {
+  return Boolean(getLocalStorageConfig());
+}
 
 function getForgeConfig() {
   const forgeUrl = ENV.forgeApiUrl;
@@ -33,8 +66,14 @@ export async function storagePut(
   data: Buffer | Uint8Array | string,
   contentType = "application/octet-stream",
 ): Promise<{ key: string; url: string }> {
-  const { forgeUrl, forgeKey } = getForgeConfig();
   const key = appendHashSuffix(normalizeKey(relKey));
+  const local = getLocalStorageConfig();
+  if (local) {
+    await getLocalClient(local).send(new PutObjectCommand({ Bucket: local.bucket, Key: key, Body: data, ContentType: contentType }));
+    return { key, url: `/manus-storage/${key}` };
+  }
+
+  const { forgeUrl, forgeKey } = getForgeConfig();
 
   // 1. Get presigned PUT URL from Forge
   const presignUrl = new URL("v1/storage/presign/put", forgeUrl + "/");
@@ -77,8 +116,13 @@ export async function storageGet(relKey: string): Promise<{ key: string; url: st
 }
 
 export async function storageGetSignedUrl(relKey: string): Promise<string> {
-  const { forgeUrl, forgeKey } = getForgeConfig();
   const key = normalizeKey(relKey);
+  const local = getLocalStorageConfig();
+  if (local) {
+    return getSignedUrl(getLocalClient(local), new GetObjectCommand({ Bucket: local.bucket, Key: key }), { expiresIn: 900 });
+  }
+
+  const { forgeUrl, forgeKey } = getForgeConfig();
 
   const getUrl = new URL("v1/storage/presign/get", forgeUrl + "/");
   getUrl.searchParams.set("path", key);
@@ -94,4 +138,10 @@ export async function storageGetSignedUrl(relKey: string): Promise<string> {
 
   const { url } = (await resp.json()) as { url: string };
   return url;
+}
+
+export async function storageGetLocalObject(relKey: string) {
+  const local = getLocalStorageConfig();
+  if (!local) throw new Error("Local object storage is not configured");
+  return getLocalClient(local).send(new GetObjectCommand({ Bucket: local.bucket, Key: normalizeKey(relKey) }));
 }

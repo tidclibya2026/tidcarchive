@@ -10,13 +10,34 @@ import OfficialDocumentsPage from "@/pages/OfficialDocumentsPage";
 import ReportsPage from "@/pages/ReportsPage";
 import UsersPage from "@/pages/UsersPage";
 import { LocalLoginScreen } from "@/components/LocalLoginScreen";
-import { Route, Switch } from "wouter";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { DashboardLayoutSkeleton } from "@/components/DashboardLayoutSkeleton";
+import { Route, Switch, useLocation } from "wouter";
+import { useEffect } from "react";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 
+function EntryScreen() {
+  const { loading, user } = useAuth();
+  if (loading) return <DashboardLayoutSkeleton />;
+  return user ? <Home /> : <LocalLoginScreen />;
+}
+
+function LoginRoute() {
+  const { loading, user } = useAuth();
+  const [, setLocation] = useLocation();
+
+  useEffect(() => {
+    if (!loading && user) setLocation("/", { replace: true });
+  }, [loading, setLocation, user]);
+
+  if (loading || user) return <DashboardLayoutSkeleton />;
+  return <LocalLoginScreen />;
+}
+
 function Router() {
   return <Switch>
-    <Route path="/" component={Home} />
+    <Route path="/" component={EntryScreen} />
     <Route path="/incoming"><CorrespondencePage type="incoming" /></Route>
     <Route path="/outgoing"><CorrespondencePage type="outgoing" /></Route>
     <Route path="/decisions"><OfficialDocumentsPage type="decision" /></Route>
@@ -26,7 +47,7 @@ function Router() {
     <Route path="/reports" component={ReportsPage} />
     <Route path="/users" component={UsersPage} />
     <Route path="/audit" component={AuditPage} />
-    <Route path="/login"><LocalLoginScreen /></Route>
+    <Route path="/login" component={LoginRoute} />
     <Route path="/404" component={NotFound} />
     <Route component={NotFound} />
   </Switch>;

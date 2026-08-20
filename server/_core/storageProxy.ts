@@ -1,11 +1,31 @@
 import type { Express } from "express";
 import { ENV } from "./env";
+import { storageGetLocalObject, usesLocalS3Storage } from "../storage";
 
 export function registerStorageProxy(app: Express) {
   app.get("/manus-storage/*", async (req, res) => {
     const key = (req.params as Record<string, string>)[0];
     if (!key) {
       res.status(400).send("Missing storage key");
+      return;
+    }
+
+    if (usesLocalS3Storage()) {
+      try {
+        const object = await storageGetLocalObject(key);
+        if (object.ContentType) res.type(object.ContentType);
+        if (object.ContentLength) res.set("Content-Length", String(object.ContentLength));
+        res.set("Cache-Control", "private, no-store");
+        const body = object.Body as NodeJS.ReadableStream | undefined;
+        if (!body?.pipe) {
+          res.status(502).send("Local storage returned no response body");
+          return;
+        }
+        body.pipe(res);
+      } catch (err) {
+        console.error("[StorageProxy] local storage failed:", err);
+        res.status(404).send("Stored file was not found");
+      }
       return;
     }
 

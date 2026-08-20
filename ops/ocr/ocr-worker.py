@@ -79,4 +79,4 @@ def create_job():
     return jsonify(accepted=True, attachmentId=attachment_id), 202
 
 if __name__ == "__main__":
-    app.run(host="127.0.0.1", port=int(os.environ.get("OCR_PORT", "4310")))
+    app.run(host=os.environ.get("OCR_HOST", "127.0.0.1"), port=int(os.environ.get("OCR_PORT", "4310")))

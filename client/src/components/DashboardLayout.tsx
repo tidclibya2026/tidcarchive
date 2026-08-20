@@ -18,7 +18,6 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
-import { LocalLoginScreen } from "@/components/LocalLoginScreen";
 import { useIsMobile } from "@/hooks/useMobile";
 import {
   Archive,
@@ -35,6 +34,7 @@ import {
   ShieldPlus,
 } from "lucide-react";
 import { useLocation } from "wouter";
+import { useEffect } from "react";
 import { DashboardLayoutSkeleton } from "./DashboardLayoutSkeleton";
 import { InstitutionalHeading } from "./InstitutionalHeading";
 import { Button } from "./ui/button";
@@ -61,9 +61,14 @@ const roleLabels: Record<string, string> = {
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { loading, user } = useAuth();
+  const [, setLocation] = useLocation();
+
+  useEffect(() => {
+    if (!loading && !user) setLocation("/login", { replace: true });
+  }, [loading, setLocation, user]);
 
   if (loading) return <DashboardLayoutSkeleton />;
-  if (!user) return <LocalLoginScreen />;
+  if (!user) return <DashboardLayoutSkeleton />;
 
   return (
     <SidebarProvider>

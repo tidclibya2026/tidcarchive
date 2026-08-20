@@ -91,3 +91,9 @@
 - [ ] Run the first encrypted backup and isolated restore verification on the center's local server, then record the service logs and results.
 - [x] Grant full system permissions to the Director General, Director of the Director General Office, and Director of the Follow-Up Office while retaining their organizational assignments.
 - [x] Record the executive permission update in the account activity log and verify the assigned scope.
+- [x] Make the local sign-in screen the first screen shown at the root link and route authenticated users to their authorized workspace.
+- [x] Replace the unauthenticated inline dashboard shell with a route-based local sign-in guard.
+- [x] Create a Windows-local installation bundle for C:\Archiving, including database, object storage, environment bootstrap, service start/stop scripts, and safety notes.
+- [x] Validate the login routing, production build, and installation-bundle structure before checkpointing the local deployment package.
+- [ ] Validate the local Docker Compose definition on a Windows device with Docker Desktop, then record the successful configuration and build result.
+- [ ] Run the Windows installer on the administrative server and verify initial administrator bootstrap, service startup, and start/stop/log scripts.
