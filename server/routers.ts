@@ -12,14 +12,17 @@ import {
 } from "../shared/archive";
 import * as archiveDb from "./db";
 import { canAuthenticateLocalAccount, hashLocalPassword, normalizeEmail, verifyLocalPassword } from "./localAuth";
-import { getSessionCookieOptions } from "./_core/cookies";
+import { getLocalSessionCookieOptions, getSessionCookieOptions } from "./_core/cookies";
 import { sdk } from "./_core/sdk";
 import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { storagePut } from "./storage";
 import { enqueueLocalOcr, supportsLocalOcr } from "./ocr";
-import { COOKIE_NAME, LOCAL_SESSION_COOKIE, ONE_YEAR_MS } from "@shared/const";
+import { COOKIE_NAME, LOCAL_SESSION_COOKIE, LOCAL_SESSION_MAX_AGE_MS } from "@shared/const";
 import { exportAccountActivityCsv } from "../shared/audit";
+import { enforceIdentifierRateLimit, enforceRequestRateLimit } from "./security";
+import { decodeAndValidateUpload, sanitizeUploadFileName, type PermittedUploadMimeType } from "./uploadSecurity";
+import { scanUploadForMalware } from "./antivirus";
 
 const correspondenceStatus = z.enum(["new", "referred", "in_progress", "completed", "archived"]);
 const priority = z.enum(["normal", "urgent", "confidential"]);
@@ -75,19 +78,15 @@ async function archiveOfficialPdf(input: {
   extractedText?: string;
   uploadedById: number;
 }) {
-  const rawBase64 = input.base64.includes(",") ? input.base64.split(",").pop()! : input.base64;
-  const buffer = Buffer.from(rawBase64, "base64");
-  if (!buffer.length || buffer.length > 10 * 1024 * 1024) throw new TRPCError({ code: "BAD_REQUEST", message: "يجب أن يكون ملف PDF صالحًا وألا يتجاوز 10 ميغابايت." });
-  if (!hasPdfSignature(buffer)) throw new TRPCError({ code: "BAD_REQUEST", message: "الملف المرفق لا يحمل توقيع PDF صالحًا." });
-  const sanitized = input.fileName.replace(/[^a-zA-Z0-9._-]+/g, "-").slice(0, 160);
-  const fileName = sanitized.toLowerCase().endsWith(".pdf") ? sanitized : `${sanitized}.pdf`;
+  const { buffer, fileName } = decodeAndValidateUpload({ base64: input.base64, fileName: input.fileName, mimeType: "application/pdf" });
+  await scanUploadForMalware(buffer);
   const { key, url } = await storagePut(`tidc-archive/${input.documentType}/${input.documentId}/${Date.now()}-${fileName}`, buffer, "application/pdf");
   const attachment = await archiveDb.createAttachmentRecord({
     documentType: input.documentType,
     documentId: input.documentId,
     fileKey: key,
     fileUrl: url,
-    fileName: input.fileName,
+    fileName,
     mimeType: "application/pdf",
     sizeBytes: buffer.length,
   uploadedById: input.uploadedById,
@@ -104,17 +103,20 @@ export const appRouter = router({
     logout: publicProcedure.mutation(({ ctx }) => {
       const cookieOptions = getSessionCookieOptions(ctx.req);
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
-      ctx.res.clearCookie(LOCAL_SESSION_COOKIE, { ...cookieOptions, maxAge: -1 });
+      ctx.res.clearCookie(LOCAL_SESSION_COOKIE, { ...getLocalSessionCookieOptions(ctx.req), maxAge: -1 });
       return { success: true } as const;
     }),
     localLogin: publicProcedure
       .input(z.object({ email: institutionalEmail, password: z.string().min(1).max(128) }))
       .mutation(async ({ ctx, input }) => {
-        const user = await archiveDb.getLocalUserByEmail(normalizeEmail(input.email));
+        const email = normalizeEmail(input.email);
+        enforceRequestRateLimit(ctx.req, "local-login", 6, 15 * 60 * 1000);
+        enforceIdentifierRateLimit("local-login-email", email, 6, 15 * 60 * 1000);
+        const user = await archiveDb.getLocalUserByEmail(email);
         const isValid = user && canAuthenticateLocalAccount(user) && await verifyLocalPassword(input.password, user.passwordHash);
         if (!isValid || !user) throw new TRPCError({ code: "UNAUTHORIZED", message: "بيانات الدخول غير صحيحة أو الحساب غير نشط." });
-        const token = await sdk.createLocalSessionToken(user.id);
-        ctx.res.cookie(LOCAL_SESSION_COOKIE, token, { ...getSessionCookieOptions(ctx.req), maxAge: ONE_YEAR_MS });
+        const token = await sdk.createLocalSessionToken(user.id, { expiresInMs: LOCAL_SESSION_MAX_AGE_MS });
+        ctx.res.cookie(LOCAL_SESSION_COOKIE, token, { ...getLocalSessionCookieOptions(ctx.req), maxAge: LOCAL_SESSION_MAX_AGE_MS });
         await archiveDb.updateUserLastSignedIn(user.id);
         return archiveDb.toSafeUser(user);
       }),
@@ -294,23 +296,21 @@ export const appRouter = router({
         extractedText: z.string().max(20_000).optional(),
       }))
       .mutation(async ({ ctx, input }) => {
+        enforceRequestRateLimit(ctx.req, "attachments-upload", 24, 5 * 60 * 1000);
         if (input.documentType === "correspondence") {
           await ensureRecordAccess(ctx.user, input.documentId);
         } else {
           ensureCapability(canCreateDecisionOrCircular(roleOf(ctx.user.role)));
         }
-        const rawBase64 = input.base64.includes(",") ? input.base64.split(",").pop()! : input.base64;
-        const buffer = Buffer.from(rawBase64, "base64");
-        ensureCapability(buffer.length > 0 && buffer.length <= 10 * 1024 * 1024, "يجب ألا يتجاوز حجم المرفق 10 ميغابايت.");
-        const sanitized = input.fileName.replace(/[^a-zA-Z0-9._-]+/g, "-").slice(0, 160);
-        const fileName = sanitized.includes(".") ? sanitized : `${sanitized}.${extensionForMimeType(input.mimeType)}`;
+        const { buffer, fileName } = decodeAndValidateUpload({ base64: input.base64, fileName: input.fileName, mimeType: input.mimeType as PermittedUploadMimeType });
+        await scanUploadForMalware(buffer);
         const { key, url } = await storagePut(`tidc-archive/${input.documentType}/${input.documentId}/${Date.now()}-${fileName}`, buffer, input.mimeType);
         const attachment = await archiveDb.createAttachmentRecord({
           documentType: input.documentType,
           documentId: input.documentId,
           fileKey: key,
           fileUrl: url,
-          fileName: input.fileName,
+          fileName: sanitizeUploadFileName(input.fileName, input.mimeType as PermittedUploadMimeType),
           mimeType: input.mimeType,
           sizeBytes: buffer.length,
           extractedText: input.extractedText || undefined,

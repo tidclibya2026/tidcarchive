@@ -12,6 +12,8 @@ services:
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
     volumes:
       - tidc_mysql_data:/var/lib/mysql
+    networks:
+      - tidc-internal
     healthcheck:
       test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p$$MYSQL_ROOT_PASSWORD"]
       interval: 10s
@@ -27,6 +29,8 @@ services:
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
     volumes:
       - tidc_minio_data:/data
+    networks:
+      - tidc-internal
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://localhost:9000/minio/health/live"]
       interval: 10s
@@ -44,6 +48,25 @@ services:
     command: |
       mc alias set local http://minio:9000 "$$MINIO_ROOT_USER" "$$MINIO_ROOT_PASSWORD";
       mc mb --ignore-existing "local/$$MINIO_BUCKET";
+    networks:
+      - tidc-internal
+
+  clamav:
+    image: clamav/clamav:1.4_base
+    restart: unless-stopped
+    environment:
+      CLAMAV_NO_MILTERD: "true"
+      CLAMD_STARTUP_TIMEOUT: 900
+    volumes:
+      - tidc_clamav_data:/var/lib/clamav
+    networks:
+      - tidc-internal
+    healthcheck:
+      test: ["CMD-SHELL", "echo PING | nc -w 5 localhost 3310 | grep PONG"]
+      interval: 30s
+      timeout: 10s
+      retries: 30
+      start_period: 180s
 
   ocr:
     build:
@@ -59,6 +82,8 @@ services:
       MINIO_ACCESS_KEY: ${MINIO_ROOT_USER}
       MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
       MINIO_BUCKET: ${MINIO_BUCKET}
+    networks:
+      - tidc-internal
     depends_on:
       minio-init:
         condition: service_completed_successfully
@@ -79,10 +104,14 @@ services:
       S3_BUCKET: ${MINIO_BUCKET}
       S3_REGION: us-east-1
       LOCAL_OCR_ENDPOINT: http://ocr:4310
+      ANTIVIRUS_ENABLED: "true"
+      ANTIVIRUS_HOST: clamav
+      ANTIVIRUS_PORT: 3310
       TIDC_INITIAL_ADMIN_EMAIL: ${TIDC_INITIAL_ADMIN_EMAIL}
       TIDC_INITIAL_ADMIN_PASSWORD: ${TIDC_INITIAL_ADMIN_PASSWORD}
-    ports:
-      - "${TIDC_HTTP_PORT}:3000"
+    networks:
+      - tidc-internal
+      - tidc-edge
     depends_on:
       mysql:
         condition: service_healthy
@@ -90,7 +119,34 @@ services:
         condition: service_completed_successfully
       ocr:
         condition: service_started
+      clamav:
+        condition: service_healthy
+
+  caddy:
+    image: caddy:2.10-alpine
+    restart: unless-stopped
+    environment:
+      TIDC_HOSTNAME: ${TIDC_HOSTNAME}
+    ports:
+      - "${TIDC_HTTPS_PORT}:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - tidc_caddy_data:/data
+      - tidc_caddy_config:/config
+    networks:
+      - tidc-edge
+    depends_on:
+      app:
+        condition: service_started
 
 volumes:
   tidc_mysql_data:
   tidc_minio_data:
+  tidc_clamav_data:
+  tidc_caddy_data:
+  tidc_caddy_config:
+
+networks:
+  tidc-internal:
+    internal: true
+  tidc-edge:

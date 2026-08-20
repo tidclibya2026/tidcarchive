@@ -9,6 +9,7 @@ import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { receiveLocalOcrResult } from "../ocr";
+import { configureSecurity } from "../security";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -32,9 +33,9 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 async function startServer() {
   const app = express();
   const server = createServer(app);
-  // Configure body parser with larger size limit for file uploads
-  app.use(express.json({ limit: "50mb" }));
-  app.use(express.urlencoded({ limit: "50mb", extended: true }));
+  configureSecurity(app);
+  app.use(express.json({ limit: "16mb" }));
+  app.use(express.urlencoded({ limit: "16mb", extended: true }));
   registerStorageProxy(app);
   registerOAuthRoutes(app);
   app.post("/api/internal/ocr/result", receiveLocalOcrResult);

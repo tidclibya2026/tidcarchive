@@ -46,3 +46,13 @@ export function getSessionCookieOptions(
     secure: isSecureRequest(req),
   };
 }
+
+export function getLocalSessionCookieOptions(req: Request): Pick<CookieOptions, "domain" | "httpOnly" | "path" | "sameSite" | "secure"> {
+  const secure = isSecureRequest(req);
+  return {
+    httpOnly: true,
+    path: "/",
+    sameSite: secure ? "strict" : "lax",
+    secure,
+  };
+}

@@ -97,3 +97,10 @@
 - [x] Validate the login routing, production build, and installation-bundle structure before checkpointing the local deployment package.
 - [ ] Validate the local Docker Compose definition on a Windows device with Docker Desktop, then record the successful configuration and build result.
 - [ ] Run the Windows installer on the administrative server and verify initial administrator bootstrap, service startup, and start/stop/log scripts.
+- [x] Assess existing transport, storage, session, upload, authorization, backup, recovery, and update controls against the approved security requirements.
+- [x] Add production security headers, HTTPS-aware proxy handling, and a restrictive content-security policy that preserves approved system functions.
+- [x] Enforce rate limits for local authentication and sensitive upload endpoints, with safe logging and clear retry responses.
+- [x] Strengthen server-side validation of upload file names, sizes, MIME types, content signatures, and document access controls.
+- [x] Enable AES-256-GCM application-layer encryption before MinIO storage and add a local TLS reverse proxy configuration for encrypted client transport.
+- [x] Document malware-scanning integration, encrypted isolated backups, disaster-recovery testing, and dependency patching procedures for the administrative server.
+- [x] Add automated tests for the new security controls and validate the production build without exposing secrets.

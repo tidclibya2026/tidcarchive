@@ -1,0 +1,12 @@
+{
+  auto_https disable_redirects
+}
+
+https://{$TIDC_HOSTNAME} {
+  tls internal
+  encode zstd gzip
+  request_body {
+    max_size 16MB
+  }
+  reverse_proxy app:3000
+}

@@ -1,6 +1,7 @@
 import { GetObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { ENV } from "./_core/env";
+import { documentEncryptionEnabled, encryptDocumentForStorage } from "./documentEncryption";
 
 type LocalStorageConfig = {
   endpoint: string;
@@ -69,7 +70,15 @@ export async function storagePut(
   const key = appendHashSuffix(normalizeKey(relKey));
   const local = getLocalStorageConfig();
   if (local) {
-    await getLocalClient(local).send(new PutObjectCommand({ Bucket: local.bucket, Key: key, Body: data, ContentType: contentType }));
+    const plainData = typeof data === "string" ? Buffer.from(data) : Buffer.from(data);
+    const encrypted = encryptDocumentForStorage(plainData);
+    await getLocalClient(local).send(new PutObjectCommand({
+      Bucket: local.bucket,
+      Key: key,
+      Body: encrypted,
+      ContentType: contentType,
+      Metadata: documentEncryptionEnabled() ? { "tidc-content-type": contentType, "tidc-encryption": "aes-256-gcm" } : undefined,
+    }));
     return { key, url: `/manus-storage/${key}` };
   }
 

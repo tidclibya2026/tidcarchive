@@ -2,6 +2,7 @@
 """TIDC local OCR worker. Run only inside the local server network."""
 import io
 import os
+import base64
 from concurrent.futures import ThreadPoolExecutor
 
 import boto3
@@ -10,6 +11,7 @@ import requests
 from flask import Flask, jsonify, request
 from pdf2image import convert_from_bytes
 from PIL import Image
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
 app = Flask(__name__)
 executor = ThreadPoolExecutor(max_workers=int(os.environ.get("OCR_WORKERS", "2")))
@@ -31,6 +33,15 @@ def object_store():
         aws_secret_access_key=env("MINIO_SECRET_KEY"),
         region_name=os.environ.get("MINIO_REGION", "local"),
     )
+
+def decrypt_document(data):
+    encoded_key = os.environ.get("DOCUMENT_ENCRYPTION_KEY", "").strip()
+    if not encoded_key:
+        return data
+    key = base64.b64decode(encoded_key, validate=True)
+    if len(key) != 32 or not data.startswith(b"TIDCENC1") or len(data) < 37:
+        raise RuntimeError("تعذر التحقق من غلاف تشفير المستند.")
+    return AESGCM(key).decrypt(data[8:20], data[36:], None)
 
 def callback(attachment_id, status, extracted_text=None, error=None):
     payload = {"attachmentId": attachment_id, "status": status}
@@ -58,6 +69,7 @@ def extract_text(file_bytes, mime_type):
 def process_job(attachment_id, file_key, mime_type):
     try:
         data = object_store().get_object(Bucket=env("MINIO_BUCKET"), Key=file_key)["Body"].read()
+        data = decrypt_document(data)
         text = extract_text(data, mime_type)
         if not text:
             raise RuntimeError("لم يُستخرج نص قابل للفهرسة من المرفق.")

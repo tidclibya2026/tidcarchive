@@ -1,7 +1,7 @@
 [CmdletBinding()]
 param(
   [string]$InstallPath = "C:\Archiving",
-  [int]$Port = 8080
+  [int]$Port = 8443
 )
 
 $ErrorActionPreference = "Stop"
@@ -10,6 +10,12 @@ function New-TidcSecret {
   $bytes = New-Object byte[] 32
   [System.Security.Cryptography.RandomNumberGenerator]::Fill($bytes)
   return ([Convert]::ToHexString($bytes)).ToLowerInvariant()
+}
+
+function New-TidcAesKey {
+  $bytes = New-Object byte[] 32
+  [System.Security.Cryptography.RandomNumberGenerator]::Fill($bytes)
+  return [Convert]::ToBase64String($bytes)
 }
 
 function Read-PlainSecureString([string]$Prompt) {
@@ -37,6 +43,8 @@ if ($sourceRoot.Path -ne $targetRoot) {
 $localOps = Join-Path $InstallPath "ops\local-windows"
 $envPath = Join-Path $localOps ".env"
 if (-not (Test-Path $envPath)) {
+  $serverName = Read-Host "اسم DNS أو اسم الخادم لشهادة HTTPS [localhost]"
+  if ([string]::IsNullOrWhiteSpace($serverName)) { $serverName = "localhost" }
   $adminEmail = Read-Host "البريد الإلكتروني لمدير النظام المحلي [admin@tidcarchiv]"
   if ([string]::IsNullOrWhiteSpace($adminEmail)) { $adminEmail = "admin@tidcarchiv" }
   do {
@@ -45,7 +53,8 @@ if (-not (Test-Path $envPath)) {
   } while ($adminPassword.Length -lt 10)
 
   @(
-    "TIDC_HTTP_PORT=$Port",
+    "TIDC_HTTPS_PORT=$Port",
+    "TIDC_HOSTNAME=$serverName",
     "MYSQL_ROOT_PASSWORD=$(New-TidcSecret)",
     "MYSQL_APP_PASSWORD=$(New-TidcSecret)",
     "MINIO_ROOT_USER=tidc_minio",
@@ -53,6 +62,7 @@ if (-not (Test-Path $envPath)) {
     "MINIO_BUCKET=tidc-archive",
     "JWT_SECRET=$(New-TidcSecret)",
     "LOCAL_OCR_SHARED_SECRET=$(New-TidcSecret)",
+    "DOCUMENT_ENCRYPTION_KEY=$(New-TidcAesKey)",
     "TIDC_INITIAL_ADMIN_EMAIL=$adminEmail",
     "TIDC_INITIAL_ADMIN_PASSWORD=$adminPassword"
   ) | Set-Content -Path $envPath -Encoding utf8NoBOM
@@ -71,5 +81,5 @@ try {
   if ($LASTEXITCODE -ne 0) { throw "تعذر بدء خدمات النظام. راجع ملف السجل عبر Show-Logs.cmd." }
 } finally { Pop-Location }
 
-Write-Host "اكتمل التنصيب. افتح: http://localhost:$Port"
-Write-Host "يمكن لأجهزة الشبكة الداخلية استخدام: http://اسم-الخادم:$Port بعد ضبط جدار الحماية وHTTPS."
+Write-Host "اكتمل التنصيب. افتح: https://$serverName`:$Port"
+Write-Host "يستخدم النظام HTTPS بشهادة داخلية. ثبّت شهادة Caddy الجذرية الموثوقة على أجهزة المركز قبل الاستخدام الشبكي."
