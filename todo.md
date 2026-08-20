@@ -119,3 +119,6 @@
 - [x] Document the required local software and a secure role-based remote-support procedure for the user in Egypt and the technical administrator in Libya.
 - [x] Diagnose the reported GitHub synchronization interruption without overwriting local or remote changes.
 - [x] Resolve the development-server import error for storageGetLocalObject and verify the runtime no longer reports the missing export.
+- [ ] Diagnose and repair the GitHub Pages 404 for the tidcarchive repository without exposing production secrets or changing local hosting.
+- [ ] Define an isolated temporary training environment, data policy, participant access model, and local-server migration handover for staff training.
+- [ ] Verify that the complete application source, local deployment package, and operating documentation remain synchronized in GitHub as the reference copy.
