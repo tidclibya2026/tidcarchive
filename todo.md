@@ -117,3 +117,4 @@
 - [x] Document the confirmed server network values and create the DNS and firewall handover steps for tidc.ly.
 - [x] Create and deliver a complete Arabic Word operating manual covering the frontend, backend, database, local network, security, installation, and maintenance workflows.
 - [x] Document the required local software and a secure role-based remote-support procedure for the user in Egypt and the technical administrator in Libya.
+- [x] Diagnose the reported GitHub synchronization interruption without overwriting local or remote changes.
