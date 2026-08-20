@@ -33,6 +33,7 @@ export const users = mysqlTable("users", {
   accountType: mysqlEnum("accountType", ["oauth", "local"]).default("oauth").notNull(),
   passwordHash: varchar("passwordHash", { length: 512 }),
   isActive: mysqlEnum("isActive", ["yes", "no"]).default("yes").notNull(),
+  accessLevel: mysqlEnum("accessLevel", ["standard", "full"]).default("standard").notNull(),
   role: mysqlEnum("role", [
     "user",
     "admin",

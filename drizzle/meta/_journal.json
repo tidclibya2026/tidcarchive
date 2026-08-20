@@ -36,6 +36,13 @@
       "when": 1787189176164,
       "tag": "0004_spooky_gorilla_man",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1787190895980,
+      "tag": "0005_chilly_patriot",
+      "breakpoints": true
     }
   ]
 }

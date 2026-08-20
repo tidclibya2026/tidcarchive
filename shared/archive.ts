@@ -53,6 +53,15 @@ export function getRoleCapabilities(role: InstitutionalRole) {
   };
 }
 
+export function hasFullSystemAccess(user: { role: string; accessLevel?: string | null }) {
+  return user.role === "admin" || user.accessLevel === "full";
+}
+
+export function getUserCapabilities(user: { role: string; accessLevel?: string | null }) {
+  if (hasFullSystemAccess(user)) return getRoleCapabilities("admin");
+  return getRoleCapabilities(user.role as InstitutionalRole);
+}
+
 export function formatReferenceNumber(type: "incoming" | "outgoing", year: number, sequence: number) {
   const symbol = type === "incoming" ? "و" : "ص";
   return `TIDC/${symbol}/${year}/${String(sequence).padStart(5, "0")}`;

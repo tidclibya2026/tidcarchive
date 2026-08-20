@@ -4,8 +4,9 @@ import { z } from "zod";
 import {
   canCreateDecisionOrCircular,
   canRefer,
-  getRoleCapabilities,
+  getUserCapabilities,
   hasPdfSignature,
+  hasFullSystemAccess,
   isExecutiveRole,
   type InstitutionalRole,
 } from "../shared/archive";
@@ -37,22 +38,26 @@ function ensureCapability(condition: boolean, message = "ليس لديك الإ�
   if (!condition) throw new TRPCError({ code: "FORBIDDEN", message });
 }
 
-function scopedDepartment(user: { role: string; departmentId: number | null; officeId: number | null }) {
-  return isExecutiveRole(roleOf(user.role)) ? undefined : user.officeId || user.departmentId || -1;
+function scopedDepartment(user: { role: string; accessLevel?: string | null; departmentId: number | null; officeId: number | null }) {
+  return hasFullSystemAccess(user) || isExecutiveRole(roleOf(user.role)) ? undefined : user.officeId || user.departmentId || -1;
 }
 
-function scopedInputDepartment(user: { role: string; departmentId: number | null; officeId: number | null }, requested?: number) {
+function scopedInputDepartment(user: { role: string; accessLevel?: string | null; departmentId: number | null; officeId: number | null }, requested?: number) {
   const scope = scopedDepartment(user);
   if (scope === undefined) return requested;
   if (requested && requested !== scope) throw new TRPCError({ code: "FORBIDDEN", message: "لا يمكنك اختيار إدارة أو مكتب خارج نطاق حسابك." });
   return scope;
 }
 
-async function ensureRecordAccess(user: { role: string; departmentId: number | null; officeId: number | null }, correspondenceId: number) {
+async function ensureRecordAccess(user: { role: string; accessLevel?: string | null; departmentId: number | null; officeId: number | null }, correspondenceId: number) {
   const departmentId = scopedDepartment(user);
   if (departmentId === undefined) return;
   const records = await archiveDb.getCorrespondenceList({ departmentId });
   ensureCapability(records.some(item => item.record.id === correspondenceId), "لا يمكنك الوصول إلى هذه المعاملة.");
+}
+
+function ensureFullAccess(user: { role: string; accessLevel?: string | null }) {
+  ensureCapability(hasFullSystemAccess(user), "إدارة الحسابات وسجل التدقيق متاحان للحسابات التنفيذية المخولة فقط.");
 }
 
 function extensionForMimeType(mimeType: string) {
@@ -116,13 +121,13 @@ export const appRouter = router({
   }),
   users: router({
     list: protectedProcedure.query(({ ctx }) => {
-      ensureCapability(roleOf(ctx.user.role) === "admin", "إدارة الحسابات متاحة لمدير النظام فقط.");
+      ensureFullAccess(ctx.user);
       return archiveDb.listManagedUsers();
     }),
     create: protectedProcedure
       .input(z.object({ name: z.string().trim().min(3).max(240), email: institutionalEmail, password: z.string().min(10).max(128), role: z.enum(["admin", "director_general", "follow_up", "department_head", "staff"]), departmentId: z.number().int().positive().optional(), officeId: z.number().int().positive().optional() }))
       .mutation(async ({ ctx, input }) => {
-        ensureCapability(roleOf(ctx.user.role) === "admin", "إدارة الحسابات متاحة لمدير النظام فقط.");
+        ensureFullAccess(ctx.user);
         const email = normalizeEmail(input.email);
         if (await archiveDb.getLocalUserByEmail(email)) throw new TRPCError({ code: "CONFLICT", message: "يوجد حساب محلي بهذا البريد الإلكتروني." });
         const passwordHash = await hashLocalPassword(input.password);
@@ -132,7 +137,7 @@ export const appRouter = router({
     update: protectedProcedure
       .input(z.object({ userId: z.number().int().positive(), name: z.string().trim().min(3).max(240).optional(), role: z.enum(["admin", "director_general", "follow_up", "department_head", "staff"]).optional(), departmentId: z.number().int().positive().nullable().optional(), officeId: z.number().int().positive().nullable().optional(), isActive: z.enum(["yes", "no"]).optional() }))
       .mutation(async ({ ctx, input }) => {
-        ensureCapability(roleOf(ctx.user.role) === "admin", "إدارة الحسابات متاحة لمدير النظام فقط.");
+        ensureFullAccess(ctx.user);
         if (input.userId === ctx.user.id && input.isActive === "no") throw new TRPCError({ code: "BAD_REQUEST", message: "لا يمكن تعطيل الحساب الإداري الحالي." });
         const { userId, ...changes } = input;
         await archiveDb.updateManagedUser({ userId, ...changes, actorId: ctx.user.id, action: "account_updated" });
@@ -141,7 +146,7 @@ export const appRouter = router({
     resetPassword: protectedProcedure
       .input(z.object({ userId: z.number().int().positive(), password: z.string().min(10).max(128) }))
       .mutation(async ({ ctx, input }) => {
-        ensureCapability(roleOf(ctx.user.role) === "admin", "إدارة الحسابات متاحة لمدير النظام فقط.");
+        ensureFullAccess(ctx.user);
         await archiveDb.updateManagedUser({ userId: input.userId, passwordHash: await hashLocalPassword(input.password), actorId: ctx.user.id, action: "password_reset" });
         return { success: true };
       }),
@@ -150,13 +155,13 @@ export const appRouter = router({
     list: protectedProcedure
       .input(z.object({ userId: z.number().int().positive().optional(), action: z.string().max(100).optional(), dateFrom: z.date().optional(), dateTo: z.date().optional() }).optional())
       .query(({ ctx, input }) => {
-        ensureCapability(roleOf(ctx.user.role) === "admin", "سجل تدقيق الحسابات متاح لمدير النظام فقط.");
+        ensureFullAccess(ctx.user);
         return archiveDb.listAccountActivity(input);
       }),
     exportCsv: protectedProcedure
       .input(z.object({ userId: z.number().int().positive().optional(), action: z.string().max(100).optional(), dateFrom: z.date().optional(), dateTo: z.date().optional() }).optional())
       .query(async ({ ctx, input }) => {
-        ensureCapability(roleOf(ctx.user.role) === "admin", "سجل تدقيق الحسابات متاح لمدير النظام فقط.");
+        ensureFullAccess(ctx.user);
         const rows = await archiveDb.listAccountActivity(input);
         return { fileName: `tidc-account-audit-${new Date().toISOString().slice(0, 10)}.csv`, csv: exportAccountActivityCsv(rows) };
       }),
@@ -165,7 +170,7 @@ export const appRouter = router({
     capabilities: protectedProcedure.query(({ ctx }) => ({
       role: ctx.user.role,
       departmentId: ctx.user.departmentId,
-      ...getRoleCapabilities(roleOf(ctx.user.role)),
+      ...getUserCapabilities(ctx.user),
     })),
   }),
   catalog: router({

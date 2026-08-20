@@ -89,3 +89,5 @@
 - [x] Create inactive staff directory records for the supplied personnel without inventing institutional email addresses or login credentials.
 - [ ] Run an end-to-end local OCR job using a real PDF and image in MinIO, then verify extracted Arabic text is searchable in the archive.
 - [ ] Run the first encrypted backup and isolated restore verification on the center's local server, then record the service logs and results.
+- [x] Grant full system permissions to the Director General, Director of the Director General Office, and Director of the Follow-Up Office while retaining their organizational assignments.
+- [x] Record the executive permission update in the account activity log and verify the assigned scope.

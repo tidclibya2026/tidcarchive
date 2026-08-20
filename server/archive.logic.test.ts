@@ -3,7 +3,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { StatusBadge } from "../client/src/components/StatusBadge";
 import { InstitutionalHeading, INSTITUTIONAL_LABEL } from "../client/src/components/InstitutionalHeading";
-import { calculateKpis, formatReferenceNumber, getRoleCapabilities, hasPdfSignature, isStatusTransitionAllowed, STATUS_LABELS, summarizeReportData } from "../shared/archive";
+import { calculateKpis, formatReferenceNumber, getRoleCapabilities, getUserCapabilities, hasPdfSignature, isStatusTransitionAllowed, STATUS_LABELS, summarizeReportData } from "../shared/archive";
 
 describe("صلاحيات الأدوار المؤسسية", () => {
   it("يمنح المدير العام رؤية شاملة وإحالة واعتماد الوثائق الرسمية", () => {
@@ -12,6 +12,11 @@ describe("صلاحيات الأدوار المؤسسية", () => {
 
   it("يقصر صلاحيات الموظف على نطاقه التشغيلي", () => {
     expect(getRoleCapabilities("staff")).toMatchObject({ canViewAll: false, canRefer: false, canCreateDecisionOrCircular: false, canManageUsers: false });
+  });
+
+  it("يمنح التفويض الشامل للحساب التنفيذي مع الإبقاء على مسماه التنظيمي", () => {
+    expect(getUserCapabilities({ role: "director_general", accessLevel: "full" })).toMatchObject({ canViewAll: true, canManageUsers: true, canViewFollowUp: true });
+    expect(getUserCapabilities({ role: "follow_up", accessLevel: "standard" }).canManageUsers).toBe(false);
   });
 });
 

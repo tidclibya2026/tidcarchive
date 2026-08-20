@@ -1,0 +1,1 @@
+ALTER TABLE `users` ADD `accessLevel` enum('standard','full') DEFAULT 'standard' NOT NULL;
