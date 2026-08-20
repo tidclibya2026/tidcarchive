@@ -115,3 +115,4 @@
 - [x] Collect the approved server IP reservation, gateway, subnet mask, and internal DNS details before applying the tidc.ly network configuration.
 - [x] Analyze the supplied technical worksheet and reconcile any approved server, DNS, gateway, and subnet values for tidc.ly.
 - [x] Document the confirmed server network values and create the DNS and firewall handover steps for tidc.ly.
+- [x] Create and deliver a complete Arabic Word operating manual covering the frontend, backend, database, local network, security, installation, and maintenance workflows.
