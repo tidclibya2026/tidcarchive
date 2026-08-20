@@ -50,6 +50,7 @@ if (-not (Test-Path $envPath)) {
   $serverName = Read-Host "اسم DNS لنظام TIDC [$defaultServerName]"
   if ([string]::IsNullOrWhiteSpace($serverName)) { $serverName = $defaultServerName }
   $caddyfile = if ($tlsMode -eq "public") { "Caddyfile.public" } else { "Caddyfile" }
+  $httpBind = if ($tlsMode -eq "public") { "0.0.0.0" } else { "127.0.0.1" }
   $httpPort = if ($tlsMode -eq "public") { 80 } else { 8080 }
   $httpsPort = if ($tlsMode -eq "public") { 443 } else { $Port }
   $acmeEmail = ""
@@ -70,6 +71,7 @@ if (-not (Test-Path $envPath)) {
     "TIDC_TLS_MODE=$tlsMode",
     "TIDC_CADDYFILE=$caddyfile",
     "TIDC_HOSTNAME=$serverName",
+    "TIDC_HTTP_BIND=$httpBind",
     "TIDC_HTTP_PORT=$httpPort",
     "TIDC_HTTPS_PORT=$httpsPort",
     "TIDC_ACME_EMAIL=$acmeEmail",

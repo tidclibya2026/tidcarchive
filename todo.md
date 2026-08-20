@@ -112,3 +112,6 @@
 - [x] Add an installation-status report that redacts secrets and records the local service, HTTPS header, and container health checks for handover.
 - [x] Write and deliver an Arabic guide for downloading the package, installing to C:\Archiving, and understanding the installer and verification scripts.
 - [x] Analyze the supplied center-device IP inventory and document a privacy-preserving network plan for tidc.ly.
+- [x] Collect the approved server IP reservation, gateway, subnet mask, and internal DNS details before applying the tidc.ly network configuration.
+- [x] Analyze the supplied technical worksheet and reconcile any approved server, DNS, gateway, and subnet values for tidc.ly.
+- [x] Document the confirmed server network values and create the DNS and firewall handover steps for tidc.ly.
