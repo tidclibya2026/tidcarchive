@@ -116,7 +116,7 @@
 - [x] Diagnose and restore the development-preview URL after the reported connection refusal, then verify access externally.
 - [x] Synchronize the latest advanced-search and dashboard updates to GitHub and verify the Pages workflow reflects the updated reference.
 - [x] Exercise advanced archive search with document-type and status filters against existing records, then verify result accuracy.
-- [ ] Replace the GitHub Pages reference with an interactive static training view of the TIDC system interface, clearly separated from the live server-backed system.
+- [x] Replace the GitHub Pages reference with an interactive static training view of the TIDC system interface, clearly separated from the live server-backed system.
 - [x] Set tidc.ly as the default internal server name and retain tidc.com.ly as an optional institutional public-domain configuration.
 - [x] Add a Windows pre-flight diagnostic that validates Docker availability, disk capacity, ports, DNS resolution, and selected HTTPS mode before installation.
 - [x] Add an installation-status report that redacts secrets and records the local service, HTTPS header, and container health checks for handover.
