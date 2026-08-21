@@ -1,7 +1,9 @@
 import DashboardLayout from "@/components/DashboardLayout";
 import { ReportsHeading } from "@/components/ReportsHeading";
 import { trpc } from "@/lib/trpc";
-import { AlertCircle, BarChart3, Building2, FileBarChart, Landmark, PieChart as PieChartIcon, Send, UsersRound } from "lucide-react";
+import { AlertCircle, BarChart3, BellRing, Building2, FileBarChart, Landmark, PieChart as PieChartIcon, Send, UsersRound } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import { Bar, BarChart, CartesianGrid, Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 const COLORS = ["#2d7484", "#d0a84e", "#527c52", "#7b698e"];
@@ -12,8 +14,9 @@ export default function ReportsPage() {
   const total = analytics.data?.documentTypes.reduce((sum, item) => sum + item.count, 0) || 0;
   const incoming = analytics.data?.documentTypes.find(item => item.key === "incoming")?.count || 0;
   const outgoing = analytics.data?.documentTypes.find(item => item.key === "outgoing")?.count || 0;
+  const submitForReview = trpc.reports.submitForReview.useMutation({ onSuccess: result => toast.success(result.recipients ? `تم إرسال التنبيه إلى ${result.recipients} من مديري مكتب المتابعة.` : "تم تسجيل الطلب دون وجود حساب متابعة نشط."), onError: error => toast.error(error.message) });
 
-  return <DashboardLayout><section className="mx-auto max-w-[1500px] space-y-6"><ReportsHeading />
+  return <DashboardLayout><section className="mx-auto max-w-[1500px] space-y-6"><div className="flex flex-col justify-between gap-3 md:flex-row md:items-end"><ReportsHeading /><Button disabled={submitForReview.isPending} onClick={() => submitForReview.mutate({ title: "تقرير جديد بانتظار المراجعة", content: `تم تقديم تقرير المؤشرات الإدارية للمراجعة بتاريخ ${new Intl.DateTimeFormat("ar-LY", { dateStyle: "medium" }).format(new Date())}.` })} className="bg-[#103548] text-white hover:bg-[#17475d]"><BellRing className="ml-2 h-4 w-4" />إرسال للمراجعة</Button></div>
     {analytics.error && <div className="flex items-center gap-3 rounded-2xl border border-rose-100 bg-rose-50 p-5 text-xs text-rose-800"><AlertCircle className="h-5 w-5 shrink-0" /><span>{analytics.error.message}</span></div>}
     {!analytics.error && <><div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"><Metric icon={FileBarChart} label="إجمالي الوثائق" value={number.format(total)} tone="bg-[#e8f2f4] text-[#236078]" /><Metric icon={Send} label="البريد الوارد" value={number.format(incoming)} tone="bg-sky-50 text-sky-700" /><Metric icon={Send} label="البريد الصادر" value={number.format(outgoing)} tone="bg-amber-50 text-amber-700" /><Metric icon={BarChart3} label="قرارات ومناشير" value={number.format((analytics.data?.documentTypes.find(item => item.key === "decision")?.count || 0) + (analytics.data?.documentTypes.find(item => item.key === "circular")?.count || 0))} tone="bg-emerald-50 text-emerald-700" /></div>
       <div className="grid gap-6 xl:grid-cols-[.9fr_1.1fr]"><ChartCard icon={PieChartIcon} title="توزيع الوثائق حسب النوع" subtitle="الوارد والصادر والقرارات والمناشير"><div className="h-[300px]">{analytics.isLoading ? <LoadingChart /> : <ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={analytics.data?.documentTypes || []} dataKey="count" nameKey="label" innerRadius={58} outerRadius={98} paddingAngle={3}>{(analytics.data?.documentTypes || []).map((entry, index) => <Cell key={entry.key} fill={COLORS[index]} />)}</Pie><Tooltip formatter={value => number.format(Number(value))} /><Legend verticalAlign="bottom" iconType="circle" wrapperStyle={{ fontSize: 10, direction: "rtl" }} /></PieChart></ResponsiveContainer>}</div></ChartCard><ChartCard icon={Building2} title="الرسائل الواردة والصادرة لكل إدارة" subtitle="يُظهر الحمل التشغيلي المتراكم حسب الإدارة"><div className="h-[300px]">{analytics.isLoading ? <LoadingChart /> : <DistributionBar data={analytics.data?.byDepartment || []} />}</div></ChartCard></div>

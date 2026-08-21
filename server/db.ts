@@ -9,8 +9,9 @@ import {
   correspondence,
   decisions,
   departments,
-  externalEntities,
-  InsertUser,
+    externalEntities,
+    notifications,
+    InsertUser,
   referrals,
   users,
 } from "../drizzle/schema";
@@ -89,9 +90,17 @@ export async function updateUserLastSignedIn(id: number) {
   await db.update(users).set({ lastSignedIn: new Date() }).where(eq(users.id, id));
 }
 
-export async function listManagedUsers() {
+export async function listManagedUsers(input: { role?: "admin" | "director_general" | "follow_up" | "department_head" | "staff"; query?: string; isActive?: "yes" | "no" } = {}) {
   const db = requireDb(await getDb());
-  const [accountRows, structure] = await Promise.all([db.select().from(users).orderBy(desc(users.createdAt)), db.select().from(departments)]);
+  const conditions: SQL[] = [];
+  if (input.role) conditions.push(eq(users.role, input.role));
+  if (input.isActive) conditions.push(eq(users.isActive, input.isActive));
+  if (input.query?.trim()) {
+    const term = `%${input.query.trim()}%`;
+    const textCondition = or(like(users.name, term), like(users.email, term));
+    if (textCondition) conditions.push(textCondition);
+  }
+  const [accountRows, structure] = await Promise.all([db.select().from(users).where(and(...conditions)).orderBy(desc(users.createdAt)), db.select().from(departments)]);
   const names = new Map(structure.map(item => [item.id, item.nameAr]));
   return accountRows.map(user => ({
     ...toSafeUser(user),
@@ -149,6 +158,25 @@ export async function updateManagedUser(input: {
     await tx.update(users).set({ ...changes, passwordChangedAt: changes.passwordHash ? new Date() : undefined }).where(eq(users.id, userId));
     await tx.insert(accountActivityLogs).values({ userId, actorId, action });
   });
+}
+
+export async function listNotifications(recipientUserId: number) {
+  const db = requireDb(await getDb());
+  const rows = await db.select().from(notifications).where(eq(notifications.recipientUserId, recipientUserId)).orderBy(desc(notifications.createdAt)).limit(40);
+  return { rows, unreadCount: rows.filter(row => !row.readAt).length };
+}
+
+export async function markNotificationRead(notificationId: number, recipientUserId: number) {
+  const db = requireDb(await getDb());
+  await db.update(notifications).set({ readAt: new Date() }).where(and(eq(notifications.id, notificationId), eq(notifications.recipientUserId, recipientUserId)));
+}
+
+export async function createReportReviewNotifications(input: { title: string; content: string; relatedEntityId?: number; actorId: number }) {
+  const db = requireDb(await getDb());
+  const recipients = await db.select({ id: users.id }).from(users).where(and(eq(users.role, "follow_up"), eq(users.isActive, "yes"), sql`${users.id} <> ${input.actorId}`));
+  if (!recipients.length) return 0;
+  await db.insert(notifications).values(recipients.map(recipient => ({ recipientUserId: recipient.id, type: "report_submitted" as const, title: input.title, content: input.content, relatedEntityType: "report", relatedEntityId: input.relatedEntityId || null })));
+  return recipients.length;
 }
 
 export async function listAccountActivity(input: { userId?: number; action?: string; dateFrom?: Date; dateTo?: Date } = {}) {

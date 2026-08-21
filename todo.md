@@ -162,3 +162,7 @@
 - [x] Verify organizational-scope filtering for incoming, outgoing, archive, official documents, and follow-up views, including parent and child unit relationships.
 - [x] Add regression tests for executive full access and manager-only access, then verify the production build.
 - [x] Update Ahmed Issa organizational title to Head of Follow-up Office
+- [x] Add a dedicated Follow-up Office dashboard showing all pending tasks and their statuses clearly.
+- [x] Add notifications for the Follow-up Office when new reports are submitted for review.
+- [x] Add advanced user-list filtering by functional role.
+- [x] Add Vitest coverage and responsive visual verification for the Follow-up dashboard, notifications, and role filters.

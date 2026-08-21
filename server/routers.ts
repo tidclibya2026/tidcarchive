@@ -124,10 +124,12 @@ export const appRouter = router({
       }),
   }),
   users: router({
-    list: protectedProcedure.query(({ ctx }) => {
-      ensureFullAccess(ctx.user);
-      return archiveDb.listManagedUsers();
-    }),
+    list: protectedProcedure
+      .input(z.object({ role: z.enum(["admin", "director_general", "follow_up", "department_head", "staff"]).optional(), query: z.string().trim().max(200).optional(), isActive: z.enum(["yes", "no"]).optional() }).optional())
+      .query(({ ctx, input }) => {
+        ensureFullAccess(ctx.user);
+        return archiveDb.listManagedUsers(input);
+      }),
     create: protectedProcedure
       .input(z.object({ name: z.string().trim().min(3).max(240), email: institutionalEmail, password: z.string().min(10).max(128), role: z.enum(["admin", "director_general", "follow_up", "department_head", "staff"]), departmentId: z.number().int().positive().optional(), officeId: z.number().int().positive().optional() }))
       .mutation(async ({ ctx, input }) => {
@@ -200,11 +202,27 @@ export const appRouter = router({
   }),
   dashboard: router({
     overview: protectedProcedure.query(({ ctx }) => archiveDb.getDashboardData(scopedDepartment(ctx.user))),
+    followUp: protectedProcedure.query(({ ctx }) => {
+      ensureCapability(ctx.user.role === "follow_up" || isExecutiveRole(roleOf(ctx.user.role)), "لوحة مكتب المتابعة متاحة لمكتب المتابعة والقيادة.");
+      return archiveDb.getDashboardData(scopedDepartment(ctx.user));
+    }),
+  }),
+  notifications: router({
+    list: protectedProcedure.query(({ ctx }) => archiveDb.listNotifications(ctx.user.id)),
+    markRead: protectedProcedure.input(z.object({ notificationId: z.number().int().positive() })).mutation(async ({ ctx, input }) => {
+      await archiveDb.markNotificationRead(input.notificationId, ctx.user.id);
+      return { success: true };
+    }),
   }),
   reports: router({
     analytics: protectedProcedure.query(({ ctx }) => {
       ensureCapability(isExecutiveRole(roleOf(ctx.user.role)), "التقارير الإدارية متاحة للمدير العام ومكتب المتابعة وإدارة تقنية المعلومات.");
       return archiveDb.getReportingAnalytics();
+    }),
+    submitForReview: protectedProcedure.input(z.object({ title: z.string().trim().min(3).max(180), content: z.string().trim().min(3).max(1000) })).mutation(async ({ ctx, input }) => {
+      ensureCapability(isExecutiveRole(roleOf(ctx.user.role)), "إرسال التقارير للمراجعة متاح للجهات القيادية ومكتب المتابعة.");
+      const recipients = await archiveDb.createReportReviewNotifications({ ...input, actorId: ctx.user.id });
+      return { success: true, recipients };
     }),
   }),
   correspondence: router({

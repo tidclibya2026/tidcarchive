@@ -230,6 +230,22 @@ export const officialPdfDownloadLogs = mysqlTable(
   ],
 );
 
+export const notifications = mysqlTable(
+  "notifications",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    recipientUserId: int("recipientUserId").notNull().references(() => users.id),
+    type: mysqlEnum("type", ["report_submitted", "workflow_update", "system"]).notNull(),
+    title: varchar("title", { length: 180 }).notNull(),
+    content: text("content").notNull(),
+    relatedEntityType: varchar("relatedEntityType", { length: 40 }),
+    relatedEntityId: int("relatedEntityId"),
+    readAt: timestamp("readAt"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  table => [index("notifications_recipient_read_created_idx").on(table.recipientUserId, table.readAt, table.createdAt)],
+);
+
 export const activityLogs = mysqlTable(
   "activity_logs",
   {
@@ -252,3 +268,4 @@ export type Correspondence = typeof correspondence.$inferSelect;
 export type InsertCorrespondence = typeof correspondence.$inferInsert;
 export type Department = typeof departments.$inferSelect;
 export type Attachment = typeof attachments.$inferSelect;
+export type Notification = typeof notifications.$inferSelect;
