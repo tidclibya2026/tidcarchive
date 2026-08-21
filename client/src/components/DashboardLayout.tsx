@@ -91,11 +91,12 @@ function ArchiveSidebar() {
       <SidebarHeader className="h-auto p-5 pt-7">
         <button onClick={() => setLocation("/")} className="flex w-full items-center gap-3 text-right focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e9c87a]">
           <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-[#e9c87a] text-[#103548] shadow-lg shadow-black/10">
-            <img src="/manus-storage/tidc_e88ddbec.png" alt="شعار TIDC" className="h-9 w-9 object-contain" />
+            <img src="/manus-storage/tidc-logo_6a455ae1.png" alt="شعار مركز المعلومات والتوثيق السياحي" className="h-9 w-9 object-contain" />
           </div>
           <div className="min-w-0">
             <p className="truncate text-sm font-bold tracking-tight text-white">نظام الأرشفة الإلكترونية</p>
-            <p className="mt-0.5 truncate text-[10px] font-semibold tracking-[.08em] text-[#e9c87a]">مركز المعلومات والتوثيق السياحي</p>
+            <p className="mt-0.5 truncate text-[10px] font-semibold tracking-[.04em] text-[#e9c87a]">مركز المعلومات والتوثيق السياحي</p>
+            <p className="mt-0.5 truncate text-[9px] text-slate-300">دولة ليبيا · وزارة السياحة والصناعات التقليدية</p>
           </div>
         </button>
       </SidebarHeader>
@@ -158,7 +159,7 @@ function ArchiveHeader() {
     <header className="sticky top-0 z-30 flex h-[72px] items-center justify-between border-b border-[#dfe5dc] bg-[#f5f6f1]/90 px-4 backdrop-blur md:px-7">
       <div className="flex items-center gap-3">
         {isMobile && <SidebarTrigger className="h-10 w-10 rounded-xl border border-[#d9e0d8] bg-white text-[#103548]" />}
-        <InstitutionalHeading section={current} />
+        <div className="flex items-center gap-2"><img src="/manus-storage/ministry-logo_002815c1.png" alt="شعار وزارة السياحة والصناعات التقليدية" className="hidden h-10 w-12 object-contain sm:block" /><InstitutionalHeading section={current} /></div>
       </div>
       <div className="hidden items-center gap-2 rounded-xl border border-[#d9e0d8] bg-white px-3 py-2 text-xs font-medium text-[#527080] sm:flex">
         <BellRing className="h-4 w-4 text-[#b28937]" />

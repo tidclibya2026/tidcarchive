@@ -56,7 +56,7 @@ export function applySecurityHeaders(req: Request, res: Response, next: () => vo
     "form-action 'self'",
     "frame-ancestors 'none'",
     "object-src 'none'",
-    "img-src 'self' data: blob:",
+    "img-src 'self' https://d36hbw14aib5lz.cloudfront.net data: blob:",
     "font-src 'self' data:",
     "style-src 'self' 'unsafe-inline'",
     "script-src 'self' https://manus-analytics.com",

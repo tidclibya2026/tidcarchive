@@ -166,3 +166,4 @@
 - [x] Add notifications for the Follow-up Office when new reports are submitted for review.
 - [x] Add advanced user-list filtering by functional role.
 - [x] Add Vitest coverage and responsive visual verification for the Follow-up dashboard, notifications, and role filters.
+- [x] Update institutional header branding with the official TIDC and Ministry logos and the supplied Arabic institution name.

@@ -1,6 +1,6 @@
 import React from "react";
 
-export const INSTITUTIONAL_LABEL = "دولة ليبيا · وزارة السياحة والصناعات التقليدية";
+export const INSTITUTIONAL_LABEL = "دولة ليبيا · وزارة السياحة والصناعات التقليدية · مركز المعلومات والتوثيق السياحي";
 
 export function InstitutionalHeading({ section }: { section: string }) {
   return <div>
