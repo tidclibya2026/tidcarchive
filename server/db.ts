@@ -9,6 +9,7 @@ import {
   correspondence,
   decisions,
   departments,
+  externalEntities,
   InsertUser,
   referrals,
   users,
@@ -174,6 +175,112 @@ export async function listDepartments() {
   return db.select().from(departments).where(eq(departments.isActive, "yes")).orderBy(departments.nameAr);
 }
 
+type OrganizationUnitType = "office" | "department" | "section" | "unit";
+type ExternalEntityCategory = "ministry" | "authority" | "agency" | "service" | "municipality" | "other";
+
+export async function listOrganizationUnits(includeInactive = false) {
+  const db = requireDb(await getDb());
+  const query = db.select().from(departments);
+  return includeInactive ? query.orderBy(departments.nameAr) : query.where(eq(departments.isActive, "yes")).orderBy(departments.nameAr);
+}
+
+export async function listExternalEntities(includeInactive = false) {
+  const db = requireDb(await getDb());
+  const query = db.select().from(externalEntities);
+  return includeInactive ? query.orderBy(externalEntities.nameAr) : query.where(eq(externalEntities.isActive, "yes")).orderBy(externalEntities.nameAr);
+}
+
+async function assertActiveParent(parentId?: number | null, excludedId?: number) {
+  if (!parentId) return;
+  if (parentId === excludedId) throw new Error("لا يمكن أن تكون الوحدة التنظيمية التابعة أصلًا لنفسها.");
+  const db = requireDb(await getDb());
+  const parent = await db.select().from(departments).where(and(eq(departments.id, parentId), eq(departments.isActive, "yes"))).limit(1);
+  if (!parent[0]) throw new Error("الوحدة التنظيمية الأم غير موجودة أو غير نشطة.");
+  let ancestorId = parent[0].parentId;
+  while (ancestorId) {
+    if (ancestorId === excludedId) throw new Error("لا يمكن إنشاء دورة في الهيكل التنظيمي.");
+    const ancestor = await db.select({ parentId: departments.parentId }).from(departments).where(eq(departments.id, ancestorId)).limit(1);
+    ancestorId = ancestor[0]?.parentId || null;
+  }
+}
+
+async function assertUniqueUnit(input: { nameAr?: string; code?: string; excludedId?: number }) {
+  const db = requireDb(await getDb());
+  if (input.code) {
+    const matches = await db.select({ id: departments.id }).from(departments).where(eq(departments.code, input.code)).limit(1);
+    if (matches[0] && matches[0].id !== input.excludedId) throw new Error("رمز الوحدة التنظيمية مستخدم بالفعل.");
+  }
+  if (input.nameAr) {
+    const matches = await db.select({ id: departments.id }).from(departments).where(eq(departments.nameAr, input.nameAr)).limit(1);
+    if (matches[0] && matches[0].id !== input.excludedId) throw new Error("اسم الوحدة التنظيمية مستخدم بالفعل.");
+  }
+}
+
+async function assertUniqueExternalEntity(nameAr?: string, excludedId?: number) {
+  if (!nameAr) return;
+  const db = requireDb(await getDb());
+  const matches = await db.select({ id: externalEntities.id }).from(externalEntities).where(eq(externalEntities.nameAr, nameAr)).limit(1);
+  if (matches[0] && matches[0].id !== excludedId) throw new Error("اسم الجهة الخارجية مستخدم بالفعل.");
+}
+
+export async function createOrganizationUnit(input: { nameAr: string; code: string; type: OrganizationUnitType; parentId?: number; }) {
+  await assertUniqueUnit(input);
+  await assertActiveParent(input.parentId);
+  const db = requireDb(await getDb());
+  const result = await db.insert(departments).values({ nameAr: input.nameAr, code: input.code, type: input.type, parentId: input.parentId || null, isActive: "yes" });
+  return { id: Number(result[0].insertId) };
+}
+
+export async function updateOrganizationUnit(input: { id: number; nameAr?: string; code?: string; type?: OrganizationUnitType; parentId?: number | null; isActive?: "yes" | "no"; }) {
+  await assertUniqueUnit({ nameAr: input.nameAr, code: input.code, excludedId: input.id });
+  if (input.parentId !== undefined) await assertActiveParent(input.parentId, input.id);
+  const db = requireDb(await getDb());
+  await db.update(departments).set({ nameAr: input.nameAr, code: input.code, type: input.type, parentId: input.parentId, isActive: input.isActive }).where(eq(departments.id, input.id));
+}
+
+export async function createExternalEntity(input: { nameAr: string; category: ExternalEntityCategory; }) {
+  await assertUniqueExternalEntity(input.nameAr);
+  const db = requireDb(await getDb());
+  const result = await db.insert(externalEntities).values({ nameAr: input.nameAr, category: input.category, isActive: "yes" });
+  return { id: Number(result[0].insertId) };
+}
+
+export async function updateExternalEntity(input: { id: number; nameAr?: string; category?: ExternalEntityCategory; isActive?: "yes" | "no"; }) {
+  await assertUniqueExternalEntity(input.nameAr, input.id);
+  const db = requireDb(await getDb());
+  await db.update(externalEntities).set({ nameAr: input.nameAr, category: input.category, isActive: input.isActive }).where(eq(externalEntities.id, input.id));
+}
+
+export async function resolveCorrespondenceParties(input: {
+  sourceEntity?: string;
+  destinationEntity?: string;
+  sourceDepartmentId?: number;
+  destinationDepartmentId?: number;
+  sourceExternalEntityId?: number;
+  destinationExternalEntityId?: number;
+}) {
+  const sourceChoiceCount = Number(Boolean(input.sourceDepartmentId)) + Number(Boolean(input.sourceExternalEntityId));
+  const destinationChoiceCount = Number(Boolean(input.destinationDepartmentId)) + Number(Boolean(input.destinationExternalEntityId));
+  if (sourceChoiceCount > 1 || destinationChoiceCount > 1) throw new Error("اختر جهة واحدة فقط لكل من المصدر والوجهة.");
+  const db = requireDb(await getDb());
+  const unitIds = [input.sourceDepartmentId, input.destinationDepartmentId].filter((id): id is number => Boolean(id));
+  const entityIds = [input.sourceExternalEntityId, input.destinationExternalEntityId].filter((id): id is number => Boolean(id));
+  const [units, entities] = await Promise.all([
+    unitIds.length ? db.select().from(departments).where(and(inArray(departments.id, unitIds), eq(departments.isActive, "yes"))) : [],
+    entityIds.length ? db.select().from(externalEntities).where(and(inArray(externalEntities.id, entityIds), eq(externalEntities.isActive, "yes"))) : [],
+  ]);
+  const unitsById = new Map(units.map(item => [item.id, item.nameAr]));
+  const entitiesById = new Map(entities.map(item => [item.id, item.nameAr]));
+  const sourceEntity = input.sourceDepartmentId ? unitsById.get(input.sourceDepartmentId) : input.sourceExternalEntityId ? entitiesById.get(input.sourceExternalEntityId) : input.sourceEntity?.trim();
+  const destinationEntity = input.destinationDepartmentId ? unitsById.get(input.destinationDepartmentId) : input.destinationExternalEntityId ? entitiesById.get(input.destinationExternalEntityId) : input.destinationEntity?.trim();
+  if (!sourceEntity) throw new Error("اختر أو أدخل جهة مصدر صالحة.");
+  if (input.sourceDepartmentId && !unitsById.has(input.sourceDepartmentId)) throw new Error("جهة المصدر الداخلية غير موجودة أو غير نشطة.");
+  if (input.destinationDepartmentId && !unitsById.has(input.destinationDepartmentId)) throw new Error("جهة الوجهة الداخلية غير موجودة أو غير نشطة.");
+  if (input.sourceExternalEntityId && !entitiesById.has(input.sourceExternalEntityId)) throw new Error("جهة المصدر الخارجية غير موجودة أو غير نشطة.");
+  if (input.destinationExternalEntityId && !entitiesById.has(input.destinationExternalEntityId)) throw new Error("جهة الوجهة الخارجية غير موجودة أو غير نشطة.");
+  return { sourceEntity, destinationEntity: destinationEntity || undefined, sourceDepartmentId: input.sourceDepartmentId, destinationDepartmentId: input.destinationDepartmentId, sourceExternalEntityId: input.sourceExternalEntityId, destinationExternalEntityId: input.destinationExternalEntityId };
+}
+
 async function nextCorrespondenceSequence(type: "incoming" | "outgoing", year: number) {
   const db = requireDb(await getDb());
   const result = await db
@@ -241,6 +348,10 @@ export async function createCorrespondence(input: {
   bodyText?: string;
   sourceEntity: string;
   destinationEntity?: string;
+  sourceDepartmentId?: number;
+  destinationDepartmentId?: number;
+  sourceExternalEntityId?: number;
+  destinationExternalEntityId?: number;
   documentDate: Date;
   priority: "normal" | "urgent" | "confidential";
   currentDepartmentId?: number;
@@ -261,6 +372,10 @@ export async function createCorrespondence(input: {
     bodyText: input.bodyText || null,
     sourceEntity: input.sourceEntity,
     destinationEntity: input.destinationEntity || null,
+    sourceDepartmentId: input.sourceDepartmentId || null,
+    destinationDepartmentId: input.destinationDepartmentId || null,
+    sourceExternalEntityId: input.sourceExternalEntityId || null,
+    destinationExternalEntityId: input.destinationExternalEntityId || null,
     documentDate: input.documentDate,
     receivedAt: input.type === "incoming" ? input.documentDate : null,
     sentAt: input.type === "outgoing" ? input.documentDate : null,

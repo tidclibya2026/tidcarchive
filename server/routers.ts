@@ -27,6 +27,8 @@ import { scanUploadForMalware } from "./antivirus";
 const correspondenceStatus = z.enum(["new", "referred", "in_progress", "completed", "archived"]);
 const priority = z.enum(["normal", "urgent", "confidential"]);
 const documentKind = z.enum(["correspondence", "decision", "circular"]);
+const organizationUnitType = z.enum(["office", "department", "section", "unit"]);
+const externalEntityCategory = z.enum(["ministry", "authority", "agency", "service", "municipality", "other"]);
 const institutionalEmail = z.string().trim().min(3).max(320).regex(/^[^\s@]+@[^\s@]+$/, "أدخل بريدًا إداريًا صالحًا.");
 const requiredPdf = z.object({
   fileName: z.string().trim().min(1).max(255),
@@ -177,6 +179,24 @@ export const appRouter = router({
   }),
   catalog: router({
     departments: protectedProcedure.query(() => archiveDb.listDepartments()),
+    organizationUnits: protectedProcedure.query(() => archiveDb.listOrganizationUnits()),
+    externalEntities: protectedProcedure.query(() => archiveDb.listExternalEntities()),
+  }),
+  organization: router({
+    listUnits: protectedProcedure.query(({ ctx }) => { ensureFullAccess(ctx.user); return archiveDb.listOrganizationUnits(true); }),
+    createUnit: protectedProcedure
+      .input(z.object({ nameAr: z.string().trim().min(2).max(180), code: z.string().trim().min(2).max(32).regex(/^[A-Za-z0-9_-]+$/, "استخدم رمزًا إنجليزيًا أو أرقامًا فقط."), type: organizationUnitType, parentId: z.number().int().positive().optional() }))
+      .mutation(async ({ ctx, input }) => { ensureFullAccess(ctx.user); return archiveDb.createOrganizationUnit(input); }),
+    updateUnit: protectedProcedure
+      .input(z.object({ id: z.number().int().positive(), nameAr: z.string().trim().min(2).max(180).optional(), code: z.string().trim().min(2).max(32).regex(/^[A-Za-z0-9_-]+$/).optional(), type: organizationUnitType.optional(), parentId: z.number().int().positive().nullable().optional(), isActive: z.enum(["yes", "no"]).optional() }))
+      .mutation(async ({ ctx, input }) => { ensureFullAccess(ctx.user); await archiveDb.updateOrganizationUnit(input); return { success: true }; }),
+    listExternal: protectedProcedure.query(({ ctx }) => { ensureFullAccess(ctx.user); return archiveDb.listExternalEntities(true); }),
+    createExternal: protectedProcedure
+      .input(z.object({ nameAr: z.string().trim().min(2).max(240), category: externalEntityCategory }))
+      .mutation(async ({ ctx, input }) => { ensureFullAccess(ctx.user); return archiveDb.createExternalEntity(input); }),
+    updateExternal: protectedProcedure
+      .input(z.object({ id: z.number().int().positive(), nameAr: z.string().trim().min(2).max(240).optional(), category: externalEntityCategory.optional(), isActive: z.enum(["yes", "no"]).optional() }))
+      .mutation(async ({ ctx, input }) => { ensureFullAccess(ctx.user); await archiveDb.updateExternalEntity(input); return { success: true }; }),
   }),
   dashboard: router({
     overview: protectedProcedure.query(({ ctx }) => archiveDb.getDashboardData(scopedDepartment(ctx.user))),
@@ -196,15 +216,25 @@ export const appRouter = router({
         type: z.enum(["incoming", "outgoing"]),
         subject: z.string().trim().min(3).max(1500),
         bodyText: z.string().max(20_000).optional(),
-        sourceEntity: z.string().trim().min(2).max(240),
+        sourceEntity: z.string().trim().min(2).max(240).optional(),
         destinationEntity: z.string().trim().max(240).optional(),
+        sourceDepartmentId: z.number().int().positive().optional(),
+        destinationDepartmentId: z.number().int().positive().optional(),
+        sourceExternalEntityId: z.number().int().positive().optional(),
+        destinationExternalEntityId: z.number().int().positive().optional(),
         documentDate: z.date(),
         priority,
         currentDepartmentId: z.number().int().positive().optional(),
         dueAt: z.date().optional(),
         relatedIncomingId: z.number().int().positive().optional(),
       }))
-      .mutation(({ ctx, input }) => archiveDb.createCorrespondence({ ...input, currentDepartmentId: scopedInputDepartment(ctx.user, input.currentDepartmentId), createdById: ctx.user.id })),
+      .mutation(async ({ ctx, input }) => {
+        const { sourceEntity, destinationEntity, sourceDepartmentId, destinationDepartmentId, sourceExternalEntityId, destinationExternalEntityId, ...document } = input;
+        const currentDepartmentId = scopedInputDepartment(ctx.user, document.currentDepartmentId);
+        if (!hasFullSystemAccess(ctx.user) && sourceDepartmentId && sourceDepartmentId !== (ctx.user.officeId || ctx.user.departmentId)) throw new TRPCError({ code: "FORBIDDEN", message: "لا يمكنك اختيار مصدر داخلي خارج نطاق حسابك." });
+        const parties = await archiveDb.resolveCorrespondenceParties({ sourceEntity, destinationEntity, sourceDepartmentId, destinationDepartmentId, sourceExternalEntityId, destinationExternalEntityId });
+        return archiveDb.createCorrespondence({ ...document, ...parties, currentDepartmentId, createdById: ctx.user.id });
+      }),
     updateStatus: protectedProcedure
       .input(z.object({ correspondenceId: z.number().int().positive(), status: correspondenceStatus, note: z.string().max(2000).optional() }))
       .mutation(async ({ ctx, input }) => {

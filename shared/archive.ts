@@ -99,7 +99,7 @@ export function isStatusTransitionAllowed(current: WorkflowStatus, next: Workflo
 type ReportSource = {
   type: "incoming" | "outgoing";
   departmentName?: string | null;
-  departmentType?: "office" | "department" | "unit" | null;
+  departmentType?: "office" | "department" | "section" | "unit" | null;
   entityName?: string | null;
 };
 

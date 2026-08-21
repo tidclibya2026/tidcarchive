@@ -8,7 +8,8 @@ import Home from "@/pages/Home";
 import NotFound from "@/pages/NotFound";
 import OfficialDocumentsPage from "@/pages/OfficialDocumentsPage";
 import ReportsPage from "@/pages/ReportsPage";
-import UsersPage from "@/pages/UsersPage";
+import UsersPage from "./pages/UsersPage";
+import OrganizationPage from "./pages/OrganizationPage";
 import { LocalLoginScreen } from "@/components/LocalLoginScreen";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { DashboardLayoutSkeleton } from "@/components/DashboardLayoutSkeleton";
@@ -46,6 +47,7 @@ function Router() {
     <Route path="/archive" component={ArchivePage} />
     <Route path="/reports" component={ReportsPage} />
     <Route path="/users" component={UsersPage} />
+    <Route path="/organization" component={OrganizationPage} />
     <Route path="/audit" component={AuditPage} />
     <Route path="/login" component={LoginRoute} />
     <Route path="/404" component={NotFound} />

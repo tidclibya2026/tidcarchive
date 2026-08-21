@@ -16,12 +16,25 @@ export const departments = mysqlTable(
     nameAr: varchar("nameAr", { length: 180 }).notNull(),
     code: varchar("code", { length: 32 }).notNull(),
     parentId: int("parentId"),
-    type: mysqlEnum("type", ["office", "department", "unit"]).default("department").notNull(),
+    type: mysqlEnum("type", ["office", "department", "section", "unit"]).default("department").notNull(),
     isActive: mysqlEnum("isActive", ["yes", "no"]).default("yes").notNull(),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
     updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   },
-  table => [uniqueIndex("departments_code_unique").on(table.code)],
+  table => [uniqueIndex("departments_code_unique").on(table.code), index("departments_parent_idx").on(table.parentId)],
+);
+
+export const externalEntities = mysqlTable(
+  "external_entities",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    nameAr: varchar("nameAr", { length: 240 }).notNull(),
+    category: mysqlEnum("category", ["ministry", "authority", "agency", "service", "municipality", "other"]).default("other").notNull(),
+    isActive: mysqlEnum("isActive", ["yes", "no"]).default("yes").notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  table => [uniqueIndex("external_entities_name_unique").on(table.nameAr), index("external_entities_active_idx").on(table.isActive)],
 );
 
 export const users = mysqlTable("users", {
@@ -79,6 +92,10 @@ export const correspondence = mysqlTable(
     bodyText: text("bodyText"),
     sourceEntity: varchar("sourceEntity", { length: 240 }).notNull(),
     destinationEntity: varchar("destinationEntity", { length: 240 }),
+    sourceDepartmentId: int("sourceDepartmentId").references(() => departments.id),
+    destinationDepartmentId: int("destinationDepartmentId").references(() => departments.id),
+    sourceExternalEntityId: int("sourceExternalEntityId").references(() => externalEntities.id),
+    destinationExternalEntityId: int("destinationExternalEntityId").references(() => externalEntities.id),
     documentDate: timestamp("documentDate").notNull(),
     receivedAt: timestamp("receivedAt"),
     sentAt: timestamp("sentAt"),
@@ -97,6 +114,7 @@ export const correspondence = mysqlTable(
     uniqueIndex("correspondence_reference_unique").on(table.referenceNumber),
     index("correspondence_status_due_idx").on(table.status, table.dueAt),
     index("correspondence_current_department_idx").on(table.currentDepartmentId),
+    index("correspondence_party_lookup_idx").on(table.sourceExternalEntityId, table.destinationExternalEntityId),
   ],
 );
 
