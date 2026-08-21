@@ -484,10 +484,14 @@ export async function getDecisions(departmentId?: number) {
   const scope = departmentId ? eq(decisions.issuingDepartmentId, departmentId) : undefined;
   const [records, pdfFiles] = await Promise.all([
     db.select().from(decisions).where(scope).orderBy(desc(decisions.effectiveDate)),
-    db.select({ documentId: attachments.documentId, fileName: attachments.fileName, fileUrl: attachments.fileUrl }).from(attachments).where(and(eq(attachments.documentType, "decision"), eq(attachments.mimeType, "application/pdf"))),
+    db.select({ id: attachments.id, documentId: attachments.documentId, fileName: attachments.fileName, fileUrl: attachments.fileUrl }).from(attachments).where(and(eq(attachments.documentType, "decision"), eq(attachments.mimeType, "application/pdf"))),
   ]);
-  const archiveByDecision = new Map(pdfFiles.map(file => [file.documentId, file]));
-  return records.map(record => ({ ...record, pdfArchive: archiveByDecision.get(record.id) || null }));
+  const archivesByDecision = new Map<number, typeof pdfFiles>();
+  pdfFiles.forEach(file => archivesByDecision.set(file.documentId, [...(archivesByDecision.get(file.documentId) || []), file]));
+  return records.map(record => {
+    const pdfArchives = archivesByDecision.get(record.id) || [];
+    return { ...record, pdfArchive: pdfArchives[0] || null, pdfArchives };
+  });
 }
 
 export async function createDecision(input: {
@@ -610,6 +614,7 @@ export async function getDashboardData(departmentId?: number) {
     }, {}),
   ).sort((a, b) => b.count - a.count);
   const db = requireDb(await getDb());
+  const decisionTotals = await db.select({ count: sql<number>`count(*)` }).from(decisions).where(departmentId ? eq(decisions.issuingDepartmentId, departmentId) : undefined);
   const latestActions = await db
     .select({ log: activityLogs, actorName: users.name })
     .from(activityLogs)
@@ -619,6 +624,11 @@ export async function getDashboardData(departmentId?: number) {
   return {
     metrics: {
       ...kpis,
+    },
+    quickStats: {
+      incoming: records.filter(row => row.record.type === "incoming").length,
+      outgoing: records.filter(row => row.record.type === "outgoing").length,
+      decisions: Number(decisionTotals[0]?.count || 0),
     },
     active: records.filter(row => row.record.status !== "completed" && row.record.status !== "archived").slice(0, 8),
     overdue: records.filter(row => row.record.dueAt && row.record.dueAt.getTime() < now.getTime() && row.record.status !== "completed" && row.record.status !== "archived").slice(0, 8),

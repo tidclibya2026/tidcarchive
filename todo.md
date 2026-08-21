@@ -143,4 +143,8 @@
 - [ ] Add backend and UI tests for the metadata validation and saved-entity dropdown workflow, then verify the production build.
 - [x] Diagnose and fix the database error that prevents saving administrative decisions with an attached PDF.
 - [x] Add a regression test for administrative-decision creation after the database schema is aligned.
-- [ ] Verify the live application route and document why the GitHub repository cannot host the server-backed archival system by itself.
+- [x] Verify the live application route and document why the GitHub repository cannot host the server-backed archival system by itself.
+- [x] Add search and filtering inside the reference-correspondence selector for decisions and circulars.
+- [x] Allow multiple validated PDF attachments for one administrative decision, archive each file, and show the count and available files in the register.
+- [x] Add a fast statistics panel for registered incoming and outgoing correspondence plus administrative decisions.
+- [x] Add tests for reference search filtering, multi-PDF decision input, and statistics output, then verify the production build.

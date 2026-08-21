@@ -3,7 +3,7 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
-import { Archive, ArrowLeft, BarChart3, CheckCircle2, Clock3, FileInput, FilePlus2, FolderSearch, Gauge, Hourglass, Inbox, ListChecks, RefreshCw, TimerReset } from "lucide-react";
+import { Archive, ArrowLeft, BarChart3, CheckCircle2, Clock3, FileInput, FilePlus2, FolderSearch, Gavel, Gauge, Hourglass, Inbox, ListChecks, RefreshCw, Send, TimerReset } from "lucide-react";
 import { useLocation } from "wouter";
 
 const number = new Intl.NumberFormat("ar-LY");
@@ -17,6 +17,7 @@ export default function Home() {
   const [_, setLocation] = useLocation();
   const { data, isLoading, isFetching, dataUpdatedAt } = trpc.dashboard.overview.useQuery(undefined, { refetchInterval: 30_000 });
   const metrics = data?.metrics;
+  const quickStats = data?.quickStats;
   const cards = [
     { label: "معاملات نشطة", value: metrics?.active || 0, icon: Inbox, tone: "bg-[#e8f2f4] text-[#216379]", detail: "تحتاج متابعة أو إجراء", href: "/follow-up" },
     { label: "قيد المعالجة", value: metrics?.inProgress || 0, icon: Hourglass, tone: "bg-[#fff3d9] text-[#a36e15]", detail: "لدى الإدارات المختصة", href: "/follow-up" },
@@ -46,6 +47,13 @@ export default function Home() {
         </div>
 
         <div className="flex items-center justify-between gap-3 px-1 text-[10px] text-[#78909a]" aria-live="polite"><span className="flex items-center gap-1.5"><RefreshCw className={`h-3.5 w-3.5 ${isFetching ? "animate-spin" : ""}`} />تتحدث المؤشرات تلقائيًا كل 30 ثانية</span>{dataUpdatedAt > 0 && <span className="hidden sm:inline">آخر تحديث: {new Intl.DateTimeFormat("ar-LY", { hour: "numeric", minute: "numeric" }).format(new Date(dataUpdatedAt))}</span>}</div>
+
+        <section className="institution-card overflow-hidden" aria-label="إحصاءات التسجيل السريعة">
+          <div className="flex items-center justify-between border-b border-[#e7ece5] px-5 py-4"><div><p className="text-sm font-bold text-[#17394d]">إحصاءات التسجيل السريعة</p><p className="mt-1 text-[10px] text-[#78909a]">إجمالي السجلات الظاهرة ضمن نطاق صلاحياتك.</p></div><BarChart3 className="h-4 w-4 text-[#b28937]" /></div>
+          <div className="grid divide-y divide-[#e7ece5] sm:grid-cols-3 sm:divide-x sm:divide-x-reverse sm:divide-y-0">
+            {[{ label: "المراسلات الواردة", value: quickStats?.incoming || 0, icon: Inbox, href: "/incoming", tone: "text-sky-700" }, { label: "المراسلات الصادرة", value: quickStats?.outgoing || 0, icon: Send, href: "/outgoing", tone: "text-violet-700" }, { label: "القرارات الإدارية", value: quickStats?.decisions || 0, icon: Gavel, href: "/decisions", tone: "text-amber-700" }].map(stat => <button key={stat.label} type="button" onClick={() => setLocation(stat.href)} className="flex items-center justify-between gap-3 p-5 text-right transition-colors hover:bg-[#fbfcf9] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c49e47]"><div><p className="text-[11px] font-bold text-[#58737d]">{stat.label}</p><p className="mt-2 text-3xl font-bold tracking-tight text-[#17394d]">{isLoading ? "—" : number.format(stat.value)}</p></div><div className={`grid h-10 w-10 place-items-center rounded-xl bg-[#f3f7f5] ${stat.tone}`}><stat.icon className="h-5 w-5" /></div></button>)}
+          </div>
+        </section>
 
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 xl:gap-4">
           {cards.map(card => (

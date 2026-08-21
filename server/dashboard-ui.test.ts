@@ -20,4 +20,14 @@ describe("سهولة استخدام لوحة القيادة", () => {
     expect(homeSource).toContain("sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5");
     expect(homeSource).toContain("تتحدث المؤشرات تلقائيًا كل 30 ثانية");
   });
+
+  it("يعرض الإحصاءات السريعة للوارد والصادر والقرارات", () => {
+    expect(homeSource).toContain("إحصاءات التسجيل السريعة");
+    expect(homeSource).toContain("quickStats?.incoming");
+    expect(homeSource).toContain("quickStats?.outgoing");
+    expect(homeSource).toContain("quickStats?.decisions");
+    expect(homeSource).toContain("المراسلات الواردة");
+    expect(homeSource).toContain("المراسلات الصادرة");
+    expect(homeSource).toContain("القرارات الإدارية");
+  });
 });

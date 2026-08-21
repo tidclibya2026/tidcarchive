@@ -273,18 +273,20 @@ export const appRouter = router({
         effectiveDate: z.date(),
         issuingDepartmentId: z.number().int().positive().optional(),
         sourceCorrespondenceId: z.number().int().positive().optional(),
-        pdf: requiredPdf,
+        pdfs: z.array(requiredPdf).min(1, "أرفق ملف PDF واحدًا على الأقل للقرار.").max(5, "يسمح بخمسة ملفات PDF كحد أقصى للقرار الواحد."),
       }))
       .mutation(async ({ ctx, input }) => {
         ensureCapability(canCreateDecisionOrCircular(roleOf(ctx.user.role)));
-        const { pdf, ...document } = input;
+        const { pdfs, ...document } = input;
         if (document.sourceCorrespondenceId) {
           const source = await archiveDb.getCorrespondenceById(document.sourceCorrespondenceId);
           if (!source) throw new TRPCError({ code: "BAD_REQUEST", message: "المراسلة المرجعية المختارة غير موجودة. اخترها من القائمة أو اترك الحقل فارغًا." });
           await ensureRecordAccess(ctx.user, document.sourceCorrespondenceId);
         }
         const result = await archiveDb.createDecision({ ...document, issuingDepartmentId: scopedInputDepartment(ctx.user, document.issuingDepartmentId), createdById: ctx.user.id });
-        await archiveOfficialPdf({ documentType: "decision", documentId: result.id, fileName: pdf.fileName, base64: pdf.base64, extractedText: document.bodyText, uploadedById: ctx.user.id });
+        for (const pdf of pdfs) {
+          await archiveOfficialPdf({ documentType: "decision", documentId: result.id, fileName: pdf.fileName, base64: pdf.base64, extractedText: document.bodyText, uploadedById: ctx.user.id });
+        }
         return result;
       }),
   }),
