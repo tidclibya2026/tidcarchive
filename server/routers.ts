@@ -224,6 +224,10 @@ export const appRouter = router({
         destinationExternalEntityId: z.number().int().positive().optional(),
         documentDate: z.date(),
         priority,
+        classification: z.string().trim().min(2).max(120).default("عام"),
+        confidentiality: z.enum(["public", "internal", "confidential", "secret"]).default("internal"),
+        keywords: z.string().trim().max(1000).optional(),
+        archiveStatus: z.enum(["registered", "approved", "archived"]).default("registered"),
         currentDepartmentId: z.number().int().positive().optional(),
         dueAt: z.date().optional(),
         relatedIncomingId: z.number().int().positive().optional(),
@@ -274,7 +278,11 @@ export const appRouter = router({
       .mutation(async ({ ctx, input }) => {
         ensureCapability(canCreateDecisionOrCircular(roleOf(ctx.user.role)));
         const { pdf, ...document } = input;
-        if (document.sourceCorrespondenceId) await ensureRecordAccess(ctx.user, document.sourceCorrespondenceId);
+        if (document.sourceCorrespondenceId) {
+          const source = await archiveDb.getCorrespondenceById(document.sourceCorrespondenceId);
+          if (!source) throw new TRPCError({ code: "BAD_REQUEST", message: "المراسلة المرجعية المختارة غير موجودة. اخترها من القائمة أو اترك الحقل فارغًا." });
+          await ensureRecordAccess(ctx.user, document.sourceCorrespondenceId);
+        }
         const result = await archiveDb.createDecision({ ...document, issuingDepartmentId: scopedInputDepartment(ctx.user, document.issuingDepartmentId), createdById: ctx.user.id });
         await archiveOfficialPdf({ documentType: "decision", documentId: result.id, fileName: pdf.fileName, base64: pdf.base64, extractedText: document.bodyText, uploadedById: ctx.user.id });
         return result;
@@ -295,7 +303,11 @@ export const appRouter = router({
       .mutation(async ({ ctx, input }) => {
         ensureCapability(canCreateDecisionOrCircular(roleOf(ctx.user.role)));
         const { pdf, ...document } = input;
-        if (document.sourceCorrespondenceId) await ensureRecordAccess(ctx.user, document.sourceCorrespondenceId);
+        if (document.sourceCorrespondenceId) {
+          const source = await archiveDb.getCorrespondenceById(document.sourceCorrespondenceId);
+          if (!source) throw new TRPCError({ code: "BAD_REQUEST", message: "المراسلة المرجعية المختارة غير موجودة. اخترها من القائمة أو اترك الحقل فارغًا." });
+          await ensureRecordAccess(ctx.user, document.sourceCorrespondenceId);
+        }
         const result = await archiveDb.createCircular({ ...document, issuingDepartmentId: scopedInputDepartment(ctx.user, document.issuingDepartmentId), createdById: ctx.user.id });
         await archiveOfficialPdf({ documentType: "circular", documentId: result.id, fileName: pdf.fileName, base64: pdf.base64, extractedText: document.bodyText, uploadedById: ctx.user.id });
         return result;

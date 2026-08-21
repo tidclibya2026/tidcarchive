@@ -137,3 +137,10 @@
 - [x] Add a Windows pre-flight diagnostic that validates Docker availability, disk capacity, ports, DNS resolution, and selected HTTPS mode before installation.
 - [x] Add an installation-status report that redacts secrets and records the local service, HTTPS header, and container health checks for handover.
 - [x] Write and deliver an Arabic guide for downloading the package, installing to C:\Archiving, and understanding the installer and verification scripts.
+- [ ] Add institutional archive metadata to correspondence records: reference number, document title, classification, confidentiality, keywords, document status, and automatic entry date.
+- [ ] Replace free-text correspondence party fields with searchable dropdowns populated from active internal units and external entities, while retaining an explicit controlled fallback for legacy records.
+- [ ] Show the new archive metadata in correspondence registration, list, and archive-search views with Arabic RTL labels.
+- [ ] Add backend and UI tests for the metadata validation and saved-entity dropdown workflow, then verify the production build.
+- [x] Diagnose and fix the database error that prevents saving administrative decisions with an attached PDF.
+- [x] Add a regression test for administrative-decision creation after the database schema is aligned.
+- [ ] Verify the live application route and document why the GitHub repository cannot host the server-backed archival system by itself.

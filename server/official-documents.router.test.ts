@@ -3,11 +3,13 @@ import { describe, expect, it, vi } from "vitest";
 const dbMocks = vi.hoisted(() => ({
   createDecision: vi.fn(),
   createCircular: vi.fn(),
+  getCorrespondenceById: vi.fn(),
 }));
 
 vi.mock("./db", () => ({
   createDecision: dbMocks.createDecision,
   createCircular: dbMocks.createCircular,
+  getCorrespondenceById: dbMocks.getCorrespondenceById,
 }));
 
 import { appRouter } from "./routers";
@@ -31,5 +33,19 @@ describe("إجراءات القرارات والمناشير المؤرشفة", 
     dbMocks.createDecision.mockResolvedValueOnce({ id: 99, decisionNumber: "ق/2026/0001" });
     const caller = appRouter.createCaller(ctx);
     await expect(caller.decisions.create({ ...validBase, effectiveDate: new Date(), pdf: { fileName: "invalid.pdf", base64: "data:application/pdf;base64,SGVsbG8gV0VMQ09NRQ==" } })).rejects.toMatchObject({ code: "BAD_REQUEST", message: "الملف المرفق لا يحمل توقيع PDF صالحًا." });
+  });
+
+  it("يعرض رسالة تحقق واضحة عند اختيار مراسلة مرجعية غير موجودة بدل فشل إدراج القرار", async () => {
+    dbMocks.createDecision.mockClear();
+    dbMocks.getCorrespondenceById.mockResolvedValueOnce(null);
+    const caller = appRouter.createCaller(ctx);
+
+    await expect(caller.decisions.create({
+      ...validBase,
+      sourceCorrespondenceId: 4,
+      effectiveDate: new Date(),
+      pdf: { fileName: "valid.pdf", base64: "data:application/pdf;base64,JVBERi0xLjQKJQ==" },
+    })).rejects.toMatchObject({ code: "BAD_REQUEST", message: "المراسلة المرجعية المختارة غير موجودة. اخترها من القائمة أو اترك الحقل فارغًا." });
+    expect(dbMocks.createDecision).not.toHaveBeenCalled();
   });
 });

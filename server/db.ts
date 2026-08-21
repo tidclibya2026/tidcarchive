@@ -325,6 +325,8 @@ export async function getCorrespondenceList(input: {
         like(correspondence.sourceEntity, `%${search}%`),
         like(correspondence.destinationEntity, `%${search}%`),
         like(correspondence.bodyText, `%${search}%`),
+        like(correspondence.classification, `%${search}%`),
+        like(correspondence.keywords, `%${search}%`),
       )
     : undefined;
 
@@ -342,6 +344,12 @@ export async function getCorrespondenceList(input: {
   return results.map(row => ({ ...row, latestAction: latestByRecord.get(row.record.id) }));
 }
 
+export async function getCorrespondenceById(id: number) {
+  const db = requireDb(await getDb());
+  const record = await db.select().from(correspondence).where(eq(correspondence.id, id)).limit(1);
+  return record[0] || null;
+}
+
 export async function createCorrespondence(input: {
   type: "incoming" | "outgoing";
   subject: string;
@@ -354,6 +362,10 @@ export async function createCorrespondence(input: {
   destinationExternalEntityId?: number;
   documentDate: Date;
   priority: "normal" | "urgent" | "confidential";
+  classification: string;
+  confidentiality: "public" | "internal" | "confidential" | "secret";
+  keywords?: string;
+  archiveStatus: "registered" | "approved" | "archived";
   currentDepartmentId?: number;
   dueAt?: Date;
   relatedIncomingId?: number;
@@ -380,6 +392,10 @@ export async function createCorrespondence(input: {
     receivedAt: input.type === "incoming" ? input.documentDate : null,
     sentAt: input.type === "outgoing" ? input.documentDate : null,
     priority: input.priority,
+    classification: input.classification,
+    confidentiality: input.confidentiality,
+    keywords: input.keywords || null,
+    archiveStatus: input.archiveStatus,
     currentDepartmentId: input.currentDepartmentId || null,
     dueAt: input.dueAt || null,
     relatedIncomingId: input.relatedIncomingId || null,

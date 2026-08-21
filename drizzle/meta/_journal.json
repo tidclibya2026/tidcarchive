@@ -57,6 +57,13 @@
       "when": 1787270552199,
       "tag": "0007_normal_captain_america",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "5",
+      "when": 1787272113135,
+      "tag": "0008_friendly_midnight",
+      "breakpoints": true
     }
   ]
 }

@@ -107,6 +107,10 @@ export const correspondence = mysqlTable(
     dueAt: timestamp("dueAt"),
     completedAt: timestamp("completedAt"),
     archivedAt: timestamp("archivedAt"),
+    classification: varchar("classification", { length: 120 }).default("عام").notNull(),
+    confidentiality: mysqlEnum("confidentiality", ["public", "internal", "confidential", "secret"]).default("internal").notNull(),
+    keywords: text("keywords"),
+    archiveStatus: mysqlEnum("archiveStatus", ["registered", "approved", "archived"]).default("registered").notNull(),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
     updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   },
@@ -115,6 +119,7 @@ export const correspondence = mysqlTable(
     index("correspondence_status_due_idx").on(table.status, table.dueAt),
     index("correspondence_current_department_idx").on(table.currentDepartmentId),
     index("correspondence_party_lookup_idx").on(table.sourceExternalEntityId, table.destinationExternalEntityId),
+    index("correspondence_archive_metadata_idx").on(table.classification, table.archiveStatus),
   ],
 );
 
