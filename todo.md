@@ -175,3 +175,7 @@
 - [x] Add a dark-mode toggle to the fixed top bar.
 - [x] Mark all unread notifications as read when the top-bar notification badge is clicked.
 - [x] Add tests and responsive visual verification for task search, dark mode, and notification read-all behavior.
+- [x] Add pending-task sorting by priority or due date.
+- [x] Add quick action buttons in notification items for linked tasks or reports.
+- [x] Add a visual summary chart for task completion and overall status.
+- [x] Add tests and responsive visual verification for task sorting, notification actions, and the summary chart.

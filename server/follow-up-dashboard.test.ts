@@ -43,7 +43,7 @@ describe("لوحة مكتب المتابعة والإشعارات والتصفي
     expect(followUpSource).toContain("taskSearch");
     expect(followUpSource).toContain("filteredPending");
     expect(followUpSource).toContain("بحث باسم المهمة أو المسؤول");
-    expect(followUpSource).toContain("exportPendingTasks(filteredPending)");
+    expect(followUpSource).toContain("exportPendingTasks(sortedPending)");
   });
 
   it("يدعم الوضع الليلي وتعليم كل الإشعارات كمقروءة من الشارة", () => {
