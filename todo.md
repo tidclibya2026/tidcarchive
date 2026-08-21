@@ -171,3 +171,7 @@
 - [x] Add an unread-notification badge beside the profile area in the top bar.
 - [x] Add hover motion to the official logos and keep the top bar fixed during dashboard scrolling.
 - [x] Add tests and responsive visual verification for PDF export, notification badge, logo motion, and sticky top bar.
+- [x] Add advanced search in the pending-task dashboard by task name or responsible person.
+- [x] Add a dark-mode toggle to the fixed top bar.
+- [x] Mark all unread notifications as read when the top-bar notification badge is clicked.
+- [x] Add tests and responsive visual verification for task search, dark mode, and notification read-all behavior.

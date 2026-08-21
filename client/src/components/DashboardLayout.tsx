@@ -1,5 +1,6 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
+import { useTheme } from "@/contexts/ThemeContext";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -24,6 +25,8 @@ import {
   Archive,
   BellRing,
   Building2,
+  Moon,
+  Sun,
   ClipboardList,
   FileCheck2,
   FileInput,
@@ -156,7 +159,10 @@ function ArchiveHeader() {
   const isMobile = useIsMobile();
   const [location] = useLocation();
   const { user } = useAuth();
+  const { theme, toggleTheme } = useTheme();
+  const utils = trpc.useUtils();
   const { data: notificationData } = trpc.notifications.list.useQuery(undefined, { enabled: Boolean(user), refetchInterval: 30_000 });
+  const markAllRead = trpc.notifications.markAllRead.useMutation({ onSuccess: () => utils.notifications.list.invalidate() });
   const current = menuItems.find(item => item.path === location)?.label || "نظام الأرشفة";
   return (
     <header className="sticky top-0 z-30 flex h-[72px] items-center justify-between border-b border-[#dfe5dc] bg-[#f5f6f1]/90 px-4 backdrop-blur md:px-7">
@@ -164,7 +170,7 @@ function ArchiveHeader() {
         {isMobile && <SidebarTrigger className="h-10 w-10 rounded-xl border border-[#d9e0d8] bg-white text-[#103548]" />}
         <div className="flex items-center gap-2"><img src="/manus-storage/ministry-logo_002815c1.png" alt="شعار وزارة السياحة والصناعات التقليدية" className="hidden h-10 w-12 object-contain sm:block" /><InstitutionalHeading section={current} /></div>
       </div>
-      <div className="flex items-center gap-2"><div className="hidden items-center gap-2 rounded-xl border border-[#d9e0d8] bg-white px-3 py-2 text-xs font-medium text-[#527080] sm:flex"><BellRing className="h-4 w-4 text-[#b28937]" />بيئة العمل المؤسسية</div><button aria-label={`التنبيهات غير المقروءة: ${notificationData?.unreadCount || 0}`} onClick={() => { if (user?.role === "follow_up") window.location.hash = "notifications"; }} className="relative grid h-10 w-10 place-items-center rounded-xl border border-[#d9e0d8] bg-white text-[#526f7a] transition-transform duration-200 hover:-translate-y-0.5 hover:border-[#b28937] hover:text-[#b28937]"><BellRing className="h-4 w-4" />{Boolean(notificationData?.unreadCount) && <span className="absolute -right-1 -top-1 grid min-h-5 min-w-5 place-items-center rounded-full bg-[#bd5138] px-1 text-[10px] font-bold text-white ring-2 ring-[#f5f6f1]">{(notificationData?.unreadCount || 0) > 99 ? "99+" : notificationData?.unreadCount || 0}</span>}</button><Avatar className="h-10 w-10 border border-[#d9e0d8]"><AvatarFallback className="bg-[#326072] text-xs font-bold text-white">{user?.name?.charAt(0).toUpperCase() || "م"}</AvatarFallback></Avatar></div>
+      <div className="flex items-center gap-2"><div className="hidden items-center gap-2 rounded-xl border border-[#d9e0d8] bg-white px-3 py-2 text-xs font-medium text-[#527080] sm:flex"><BellRing className="h-4 w-4 text-[#b28937]" />بيئة العمل المؤسسية</div><button aria-label={`التنبيهات غير المقروءة: ${notificationData?.unreadCount || 0}`} onClick={() => { if ((notificationData?.unreadCount || 0) > 0) markAllRead.mutate(); if (user?.role === "follow_up") window.location.hash = "notifications"; }} className="relative grid h-10 w-10 place-items-center rounded-xl border border-[#d9e0d8] bg-white text-[#526f7a] transition-transform duration-200 hover:-translate-y-0.5 hover:border-[#b28937] hover:text-[#b28937]"><BellRing className="h-4 w-4" />{Boolean(notificationData?.unreadCount) && <span className="absolute -right-1 -top-1 grid min-h-5 min-w-5 place-items-center rounded-full bg-[#bd5138] px-1 text-[10px] font-bold text-white ring-2 ring-[#f5f6f1]">{(notificationData?.unreadCount || 0) > 99 ? "99+" : notificationData?.unreadCount || 0}</span>}</button><button type="button" aria-label={theme === "dark" ? "التبديل إلى الوضع النهاري" : "التبديل إلى الوضع الليلي"} onClick={() => toggleTheme?.()} className="grid h-10 w-10 place-items-center rounded-xl border border-[#d9e0d8] bg-white text-[#526f7a] transition-colors hover:border-[#b28937] hover:text-[#b28937] dark:bg-[#183f50] dark:text-[#e9c87a]"><span className="sr-only">{theme === "dark" ? "الوضع النهاري" : "الوضع الليلي"}</span>{theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}</button><Avatar className="h-10 w-10 border border-[#d9e0d8]"><AvatarFallback className="bg-[#326072] text-xs font-bold text-white">{user?.name?.charAt(0).toUpperCase() || "م"}</AvatarFallback></Avatar></div>
     </header>
   );
 }

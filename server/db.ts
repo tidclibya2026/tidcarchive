@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, inArray, like, lte, or, sql, type SQL } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, isNull, like, lte, or, sql, type SQL } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   accountActivityLogs,
@@ -169,6 +169,11 @@ export async function listNotifications(recipientUserId: number) {
 export async function markNotificationRead(notificationId: number, recipientUserId: number) {
   const db = requireDb(await getDb());
   await db.update(notifications).set({ readAt: new Date() }).where(and(eq(notifications.id, notificationId), eq(notifications.recipientUserId, recipientUserId)));
+}
+
+export async function markAllNotificationsRead(recipientUserId: number) {
+  const db = requireDb(await getDb());
+  await db.update(notifications).set({ readAt: new Date() }).where(and(eq(notifications.recipientUserId, recipientUserId), isNull(notifications.readAt)));
 }
 
 export async function createReportReviewNotifications(input: { title: string; content: string; relatedEntityId?: number; actorId: number }) {

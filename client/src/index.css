@@ -103,3 +103,23 @@
     .correspondence-table td:nth-child(1), .correspondence-table td:nth-child(5), .correspondence-table td:nth-child(7) { white-space: nowrap; }
   }
 }
+
+.dark {
+  --background: oklch(0.18 0.025 224);
+  --foreground: oklch(0.94 0.015 95);
+  --card: oklch(0.23 0.035 224);
+  --card-foreground: oklch(0.94 0.015 95);
+  --popover: oklch(0.23 0.035 224);
+  --popover-foreground: oklch(0.94 0.015 95);
+  --muted: oklch(0.27 0.035 224);
+  --muted-foreground: oklch(0.72 0.025 200);
+  --border: oklch(0.34 0.04 224);
+  --input: oklch(0.34 0.04 224);
+}
+
+.dark .institution-card { border-color: #315363; background: #183f50; box-shadow: 0 12px 32px rgba(0,0,0,.18); }
+.dark header.sticky { border-color: #315363; background: rgba(24,63,80,.92); }
+.dark main, .dark body { color: #eef4f0; }
+.dark input, .dark textarea, .dark select { background-color: #183f50; color: #eef4f0; border-color: #416676; }
+.dark .text-\[\#17394d\], .dark .text-\[\#294958\] { color: #eef4f0 !important; }
+.dark .text-\[\#718793\], .dark .text-\[\#78909a\], .dark .text-\[\#91a1a2\] { color: #adc2c8 !important; }

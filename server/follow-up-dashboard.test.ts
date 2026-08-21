@@ -39,6 +39,21 @@ describe("لوحة مكتب المتابعة والإشعارات والتصفي
     expect(layoutSource).toContain("ministry-logo_002815c1.png");
   });
 
+  it("يدعم البحث باسم المهمة أو المسؤول ويربط التصدير بالنتائج المفلترة", () => {
+    expect(followUpSource).toContain("taskSearch");
+    expect(followUpSource).toContain("filteredPending");
+    expect(followUpSource).toContain("بحث باسم المهمة أو المسؤول");
+    expect(followUpSource).toContain("exportPendingTasks(filteredPending)");
+  });
+
+  it("يدعم الوضع الليلي وتعليم كل الإشعارات كمقروءة من الشارة", () => {
+    expect(layoutSource).toContain("toggleTheme");
+    expect(layoutSource).toContain("التبديل إلى الوضع الليلي");
+    expect(layoutSource).toContain("notifications.markAllRead");
+    expect(routerSource).toContain("markAllRead");
+    expect(schemaSource).toContain("readAt");
+  });
+
   it("يدعم البحث والتصفية حسب الدور والحالة في قائمة المستخدمين", () => {
     expect(usersSource).toContain("roleFilter");
     expect(usersSource).toContain("activeFilter");

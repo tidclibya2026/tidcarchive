@@ -213,6 +213,10 @@ export const appRouter = router({
       await archiveDb.markNotificationRead(input.notificationId, ctx.user.id);
       return { success: true };
     }),
+    markAllRead: protectedProcedure.mutation(async ({ ctx }) => {
+      await archiveDb.markAllNotificationsRead(ctx.user.id);
+      return { success: true };
+    }),
   }),
   reports: router({
     analytics: protectedProcedure.query(({ ctx }) => {
