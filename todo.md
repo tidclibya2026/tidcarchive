@@ -157,3 +157,7 @@
 - [ ] Exercise incoming or outgoing correspondence validation with a required unique reference number and document the result.
 - [x] Verify that the dashboard statistics panel shows registered incoming correspondence, outgoing correspondence, and decisions with live counts.
 - [x] Verify that active internal units and external entities appear correctly in the incoming and outgoing correspondence selectors.
+- [x] Grant full-system access to the Director General, Director of the Director General Office, Follow-Up Office, and Head of Administrative Affairs Section while preserving their organizational assignments.
+- [x] Restrict every other department or office manager to read only correspondence, decisions, circulars, and referrals associated with their assigned organizational scope.
+- [x] Verify organizational-scope filtering for incoming, outgoing, archive, official documents, and follow-up views, including parent and child unit relationships.
+- [x] Add regression tests for executive full access and manager-only access, then verify the production build.

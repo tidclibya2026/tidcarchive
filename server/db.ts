@@ -300,6 +300,27 @@ async function nextOfficialSequence(entity: "decision" | "circular", year: numbe
   return Number(result[0]?.maximum ?? 0) + 1;
 }
 
+async function getScopedUnitIds(rootUnitId: number) {
+  const db = requireDb(await getDb());
+  const units = await db.select({ id: departments.id, parentId: departments.parentId }).from(departments).where(eq(departments.isActive, "yes"));
+  const children = new Map<number, number[]>();
+  units.forEach(unit => {
+    if (unit.parentId) children.set(unit.parentId, [...(children.get(unit.parentId) || []), unit.id]);
+  });
+  const ids = new Set<number>([rootUnitId]);
+  const pending = [rootUnitId];
+  while (pending.length) {
+    const current = pending.pop()!;
+    (children.get(current) || []).forEach(childId => {
+      if (!ids.has(childId)) {
+        ids.add(childId);
+        pending.push(childId);
+      }
+    });
+  }
+  return Array.from(ids);
+}
+
 export async function getCorrespondenceList(input: {
   type?: "incoming" | "outgoing";
   status?: "new" | "referred" | "in_progress" | "completed" | "archived";
@@ -314,7 +335,10 @@ export async function getCorrespondenceList(input: {
   if (input.type) conditions.push(eq(correspondence.type, input.type));
   if (input.status) conditions.push(eq(correspondence.status, input.status));
   if (input.priority) conditions.push(eq(correspondence.priority, input.priority));
-  if (input.departmentId) conditions.push(eq(correspondence.currentDepartmentId, input.departmentId));
+  if (input.departmentId) {
+    const scopedUnitIds = await getScopedUnitIds(input.departmentId);
+    conditions.push(or(inArray(correspondence.currentDepartmentId, scopedUnitIds), inArray(correspondence.sourceDepartmentId, scopedUnitIds), inArray(correspondence.destinationDepartmentId, scopedUnitIds))!);
+  }
   if (input.dateFrom) conditions.push(gte(correspondence.documentDate, input.dateFrom));
   if (input.dateTo) conditions.push(lte(correspondence.documentDate, input.dateTo));
   const search = input.query?.trim();
@@ -484,7 +508,9 @@ export async function updateCorrespondenceStatus(input: {
 
 export async function getDecisions(departmentId?: number) {
   const db = requireDb(await getDb());
-  const scope = departmentId ? eq(decisions.issuingDepartmentId, departmentId) : undefined;
+  const scopedUnitIds = departmentId ? await getScopedUnitIds(departmentId) : [];
+  const relatedCorrespondenceIds = departmentId ? (await getCorrespondenceList({ departmentId })).map(item => item.record.id) : [];
+  const scope = departmentId ? or(inArray(decisions.issuingDepartmentId, scopedUnitIds), inArray(decisions.sourceCorrespondenceId, relatedCorrespondenceIds)) : undefined;
   const [records, pdfFiles] = await Promise.all([
     db.select().from(decisions).where(scope).orderBy(desc(decisions.effectiveDate)),
     db.select({ id: attachments.id, documentId: attachments.documentId, fileName: attachments.fileName, fileUrl: attachments.fileUrl }).from(attachments).where(and(eq(attachments.documentType, "decision"), eq(attachments.mimeType, "application/pdf"))),
@@ -529,7 +555,10 @@ export async function createDecision(input: {
 
 export async function getCirculars(departmentId?: number) {
   const db = requireDb(await getDb());
-  const scope = departmentId ? eq(circulars.issuingDepartmentId, departmentId) : undefined;
+  const scopedUnitIds = departmentId ? await getScopedUnitIds(departmentId) : [];
+  const recipientRows = departmentId ? await db.select({ circularId: circularRecipients.circularId }).from(circularRecipients).where(inArray(circularRecipients.departmentId, scopedUnitIds)) : [];
+  const relatedCorrespondenceIds = departmentId ? (await getCorrespondenceList({ departmentId })).map(item => item.record.id) : [];
+  const scope = departmentId ? or(inArray(circulars.issuingDepartmentId, scopedUnitIds), inArray(circulars.id, recipientRows.map(row => row.circularId)), inArray(circulars.sourceCorrespondenceId, relatedCorrespondenceIds)) : undefined;
   const [records, pdfFiles] = await Promise.all([
     db.select().from(circulars).where(scope).orderBy(desc(circulars.issueDate)),
     db.select({ documentId: attachments.documentId, fileName: attachments.fileName, fileUrl: attachments.fileUrl }).from(attachments).where(and(eq(attachments.documentType, "circular"), eq(attachments.mimeType, "application/pdf"))),
@@ -619,11 +648,22 @@ export async function getDashboardData(departmentId?: number) {
     }, {}),
   ).sort((a, b) => b.count - a.count);
   const db = requireDb(await getDb());
-  const decisionTotals = await db.select({ count: sql<number>`count(*)` }).from(decisions).where(departmentId ? eq(decisions.issuingDepartmentId, departmentId) : undefined);
+  const [visibleDecisions, visibleCirculars] = await Promise.all([getDecisions(departmentId), getCirculars(departmentId)]);
+  const visibleCorrespondenceIds = records.map(row => row.record.id);
+  const visibleDecisionIds = visibleDecisions.map(row => row.id);
+  const visibleCircularIds = visibleCirculars.map(row => row.id);
+  const visibleActivity = departmentId
+    ? or(
+        visibleCorrespondenceIds.length ? and(eq(activityLogs.entityType, "correspondence"), inArray(activityLogs.entityId, visibleCorrespondenceIds)) : eq(activityLogs.entityId, -1),
+        visibleDecisionIds.length ? and(eq(activityLogs.entityType, "decision"), inArray(activityLogs.entityId, visibleDecisionIds)) : eq(activityLogs.entityId, -1),
+        visibleCircularIds.length ? and(eq(activityLogs.entityType, "circular"), inArray(activityLogs.entityId, visibleCircularIds)) : eq(activityLogs.entityId, -1),
+      )
+    : undefined;
   const latestActions = await db
     .select({ log: activityLogs, actorName: users.name })
     .from(activityLogs)
     .leftJoin(users, eq(activityLogs.actorId, users.id))
+    .where(visibleActivity)
     .orderBy(desc(activityLogs.createdAt))
     .limit(8);
   return {
@@ -633,7 +673,7 @@ export async function getDashboardData(departmentId?: number) {
     quickStats: {
       incoming: records.filter(row => row.record.type === "incoming").length,
       outgoing: records.filter(row => row.record.type === "outgoing").length,
-      decisions: Number(decisionTotals[0]?.count || 0),
+      decisions: visibleDecisions.length,
     },
     active: records.filter(row => row.record.status !== "completed" && row.record.status !== "archived").slice(0, 8),
     overdue: records.filter(row => row.record.dueAt && row.record.dueAt.getTime() < now.getTime() && row.record.status !== "completed" && row.record.status !== "archived").slice(0, 8),
@@ -672,6 +712,8 @@ export async function searchArchive(input: {
   const db = requireDb(await getDb());
   const term = `%${input.query.trim()}%`;
   const departmentId = scopedDepartmentId ?? input.departmentId;
+  const visibleDecisionIds = departmentId ? (await getDecisions(departmentId)).map(record => record.id) : [];
+  const visibleCircularIds = departmentId ? (await getCirculars(departmentId)).map(record => record.id) : [];
   const correspondenceType = input.documentType === "incoming" || input.documentType === "outgoing" ? input.documentType : undefined;
   const correspondenceStatus = ["new", "referred", "in_progress", "completed", "archived"].includes(input.status || "") ? input.status as "new" | "referred" | "in_progress" | "completed" | "archived" : undefined;
   const decisionStatus = ["active", "amended", "cancelled"].includes(input.status || "") ? input.status as "active" | "amended" | "cancelled" : undefined;
@@ -683,14 +725,14 @@ export async function searchArchive(input: {
     ? []
     : await getCorrespondenceList({ query: input.query, type: correspondenceType, status: correspondenceStatus, priority: input.priority, departmentId, dateFrom: input.dateFrom, dateTo: input.dateTo });
   const decisionConditions: SQL[] = [
-    departmentId ? eq(decisions.issuingDepartmentId, departmentId) : undefined,
+    departmentId ? (visibleDecisionIds.length ? inArray(decisions.id, visibleDecisionIds) : eq(decisions.id, -1)) : undefined,
     input.documentType && input.documentType !== "decision" ? undefined : or(like(decisions.decisionNumber, term), like(decisions.subject, term), like(decisions.bodyText, term), like(correspondence.referenceNumber, term), like(correspondence.subject, term)),
     input.dateFrom ? gte(decisions.effectiveDate, input.dateFrom) : undefined,
     input.dateTo ? lte(decisions.effectiveDate, input.dateTo) : undefined,
     decisionStatus ? eq(decisions.legalStatus, decisionStatus) : undefined,
   ].filter((condition): condition is SQL => Boolean(condition));
   const circularConditions: SQL[] = [
-    departmentId ? eq(circulars.issuingDepartmentId, departmentId) : undefined,
+    departmentId ? (visibleCircularIds.length ? inArray(circulars.id, visibleCircularIds) : eq(circulars.id, -1)) : undefined,
     input.documentType && input.documentType !== "circular" ? undefined : or(like(circulars.circularNumber, term), like(circulars.subject, term), like(circulars.bodyText, term), like(correspondence.referenceNumber, term), like(correspondence.subject, term)),
     input.dateFrom ? gte(circulars.issueDate, input.dateFrom) : undefined,
     input.dateTo ? lte(circulars.issueDate, input.dateTo) : undefined,

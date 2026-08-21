@@ -40,4 +40,18 @@ describe("نطاق المكتب في الأرشيف", () => {
     await expect(caller.correspondence.create({ type: "incoming", referenceNumber: "TIDC/و/2026/00998", subject: "اختبار نطاق مكتب", sourceEntity: "جهة اختبار", documentDate: new Date(), priority: "normal", currentDepartmentId: 99 })).rejects.toMatchObject({ code: "FORBIDDEN" });
     expect(mocks.createCorrespondence).not.toHaveBeenCalled();
   });
+
+  it("يقيد دور المتابعة غير الممنوح صلاحية كاملة بنطاق مكتبه", async () => {
+    mocks.getCorrespondenceList.mockResolvedValueOnce([]);
+    const caller = appRouter.createCaller({ ...staffContext, user: { ...staffContext.user, role: "follow_up", accessLevel: "standard", officeId: 3 } });
+    await caller.correspondence.list({});
+    expect(mocks.getCorrespondenceList).toHaveBeenCalledWith(expect.objectContaining({ departmentId: 3 }));
+  });
+
+  it("يمنح الحساب القيادي المعيّن بصلاحية كاملة الاطلاع دون تقييد بوحدة", async () => {
+    mocks.getCorrespondenceList.mockResolvedValueOnce([]);
+    const caller = appRouter.createCaller({ ...staffContext, user: { ...staffContext.user, role: "department_head", accessLevel: "full", officeId: 2 } });
+    await caller.correspondence.list({});
+    expect(mocks.getCorrespondenceList).toHaveBeenCalledWith(expect.objectContaining({ departmentId: undefined }));
+  });
 });

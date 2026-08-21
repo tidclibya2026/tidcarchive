@@ -44,7 +44,7 @@ function ensureCapability(condition: boolean, message = "ليس لديك الإ�
 }
 
 function scopedDepartment(user: { role: string; accessLevel?: string | null; departmentId: number | null; officeId: number | null }) {
-  return hasFullSystemAccess(user) || isExecutiveRole(roleOf(user.role)) ? undefined : user.officeId || user.departmentId || -1;
+  return hasFullSystemAccess(user) ? undefined : user.officeId || user.departmentId || -1;
 }
 
 function scopedInputDepartment(user: { role: string; accessLevel?: string | null; departmentId: number | null; officeId: number | null }, requested?: number) {
