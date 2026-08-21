@@ -6,6 +6,7 @@ const followUpSource = fs.readFileSync(path.resolve(import.meta.dirname, "../cli
 const usersSource = fs.readFileSync(path.resolve(import.meta.dirname, "../client/src/pages/UsersPage.tsx"), "utf8");
 const routerSource = fs.readFileSync(path.resolve(import.meta.dirname, "./routers.ts"), "utf8");
 const schemaSource = fs.readFileSync(path.resolve(import.meta.dirname, "../drizzle/schema.ts"), "utf8");
+const layoutSource = fs.readFileSync(path.resolve(import.meta.dirname, "../client/src/components/DashboardLayout.tsx"), "utf8");
 
 describe("لوحة مكتب المتابعة والإشعارات والتصفية الوظيفية", () => {
   it("يعرض المهام المعلقة ومؤشرات الحالات والتنبيهات غير المقروءة", () => {
@@ -22,6 +23,20 @@ describe("لوحة مكتب المتابعة والإشعارات والتصفي
     expect(routerSource).toContain("markRead");
     expect(schemaSource).toContain('"notifications"');
     expect(schemaSource).toContain('"report_submitted"');
+  });
+
+  it("يوفر تصديرًا رسميًا لقائمة المهام إلى نافذة طباعة PDF", () => {
+    expect(followUpSource).toContain("تصدير PDF");
+    expect(followUpSource).toContain("exportPendingTasks");
+    expect(followUpSource).toContain("مركز المعلومات والتوثيق السياحي");
+    expect(followUpSource).toContain("window.print");
+  });
+
+  it("يعرض شارة التنبيهات ويثبت الشريط العلوي ويضيف حركة للشعارات", () => {
+    expect(layoutSource).toContain("notificationData?.unreadCount");
+    expect(layoutSource).toContain("sticky top-0");
+    expect(layoutSource).toContain("transition-transform");
+    expect(layoutSource).toContain("ministry-logo_002815c1.png");
   });
 
   it("يدعم البحث والتصفية حسب الدور والحالة في قائمة المستخدمين", () => {

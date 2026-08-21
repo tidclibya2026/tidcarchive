@@ -167,3 +167,7 @@
 - [x] Add advanced user-list filtering by functional role.
 - [x] Add Vitest coverage and responsive visual verification for the Follow-up dashboard, notifications, and role filters.
 - [x] Update institutional header branding with the official TIDC and Ministry logos and the supplied Arabic institution name.
+- [x] Add official-branded PDF export for the Follow-up Office pending-task list.
+- [x] Add an unread-notification badge beside the profile area in the top bar.
+- [x] Add hover motion to the official logos and keep the top bar fixed during dashboard scrolling.
+- [x] Add tests and responsive visual verification for PDF export, notification badge, logo motion, and sticky top bar.
