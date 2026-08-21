@@ -161,3 +161,4 @@
 - [x] Restrict every other department or office manager to read only correspondence, decisions, circulars, and referrals associated with their assigned organizational scope.
 - [x] Verify organizational-scope filtering for incoming, outgoing, archive, official documents, and follow-up views, including parent and child unit relationships.
 - [x] Add regression tests for executive full access and manager-only access, then verify the production build.
+- [x] Update Ahmed Issa organizational title to Head of Follow-up Office
