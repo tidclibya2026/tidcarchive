@@ -1,0 +1,1 @@
+ALTER TABLE `decisions` ADD `issuingAuthority` enum('prime_minister','tourism_minister','director_general') DEFAULT 'director_general' NOT NULL;

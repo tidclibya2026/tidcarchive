@@ -148,3 +148,7 @@
 - [x] Allow multiple validated PDF attachments for one administrative decision, archive each file, and show the count and available files in the register.
 - [x] Add a fast statistics panel for registered incoming and outgoing correspondence plus administrative decisions.
 - [x] Add tests for reference search filtering, multi-PDF decision input, and statistics output, then verify the production build.
+- [x] Restrict the decision issuing-authority field to رئيس الحكومة، وزير السياحة، والمدير العام without deleting the organizational hierarchy.
+- [x] Persist and display the selected decision issuing authority independently from departments and sections.
+- [x] Make the correspondence reference number a mandatory primary input for incoming and outgoing registration, with uniqueness validation and a visible required marker.
+- [x] Add tests for issuing-authority constraints and mandatory reference-number registration, then verify the production build.

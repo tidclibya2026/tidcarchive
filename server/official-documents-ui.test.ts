@@ -13,7 +13,14 @@ describe("واجهة القرارات والوثائق الرسمية", () => {
 
   it("تدعم ملفات PDF متعددة للقرار وتعرضها في السجل", () => {
     expect(source).toContain("multiple={type === \"decision\"}");
-    expect(source).toContain("حتى خمسة ملفات PDF");
+    expect(source).toContain('type === "decision" ? 5 : 1');
     expect(source).toContain("pdfArchives");
+  });
+
+  it("تحصر جهة إصدار القرار في الجهات القيادية المعتمدة", () => {
+    expect(source).toContain("الجهة الصادرة للقرار");
+    expect(source).toContain("رئيس الحكومة");
+    expect(source).toContain("وزير السياحة");
+    expect(source).toContain("المدير العام");
   });
 });

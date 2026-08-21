@@ -132,6 +132,7 @@ export const decisions = mysqlTable(
     year: int("year").notNull(),
     subject: text("subject").notNull(),
     bodyText: text("bodyText"),
+    issuingAuthority: mysqlEnum("issuingAuthority", ["prime_minister", "tourism_minister", "director_general"]).default("director_general").notNull(),
     issuingDepartmentId: int("issuingDepartmentId").references(() => departments.id),
     sourceCorrespondenceId: int("sourceCorrespondenceId").references(() => correspondence.id),
     effectiveDate: timestamp("effectiveDate").notNull(),

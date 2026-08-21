@@ -20,7 +20,7 @@ const ctx = {
   res: { clearCookie: vi.fn() },
 } as any;
 
-const validBase = { subject: "قرار تنظيمي للاختبار", bodyText: "ملخص", issuingDepartmentId: undefined, sourceCorrespondenceId: undefined };
+const validBase = { subject: "قرار تنظيمي للاختبار", bodyText: "ملخص", issuingAuthority: "director_general" as const, sourceCorrespondenceId: undefined };
 
 describe("إجراءات القرارات والمناشير المؤرشفة", () => {
   it("يرفض القرار والمنشور عند غياب ملف PDF الإلزامي", async () => {
@@ -47,5 +47,10 @@ describe("إجراءات القرارات والمناشير المؤرشفة", 
       pdfs: [{ fileName: "valid.pdf", base64: "data:application/pdf;base64,JVBERi0xLjQKJQ==" }],
     })).rejects.toMatchObject({ code: "BAD_REQUEST", message: "المراسلة المرجعية المختارة غير موجودة. اخترها من القائمة أو اترك الحقل فارغًا." });
     expect(dbMocks.createDecision).not.toHaveBeenCalled();
+  });
+
+  it("يرفض جهة إصدار خارج الجهات القيادية الثلاث", async () => {
+    const caller = appRouter.createCaller(ctx);
+    await expect(caller.decisions.create({ ...validBase, issuingAuthority: "department" as any, effectiveDate: new Date(), pdfs: [{ fileName: "valid.pdf", base64: "data:application/pdf;base64,JVBERi0xLjQKJQ==" }] })).rejects.toMatchObject({ code: "BAD_REQUEST" });
   });
 });

@@ -214,6 +214,7 @@ export const appRouter = router({
     create: protectedProcedure
       .input(z.object({
         type: z.enum(["incoming", "outgoing"]),
+        referenceNumber: z.string().trim().min(3, "الرقم الإشاري إلزامي.").max(64),
         subject: z.string().trim().min(3).max(1500),
         bodyText: z.string().max(20_000).optional(),
         sourceEntity: z.string().trim().min(2).max(240).optional(),
@@ -271,7 +272,7 @@ export const appRouter = router({
         subject: z.string().trim().min(3).max(1500),
         bodyText: z.string().max(20_000).optional(),
         effectiveDate: z.date(),
-        issuingDepartmentId: z.number().int().positive().optional(),
+        issuingAuthority: z.enum(["prime_minister", "tourism_minister", "director_general"]),
         sourceCorrespondenceId: z.number().int().positive().optional(),
         pdfs: z.array(requiredPdf).min(1, "أرفق ملف PDF واحدًا على الأقل للقرار.").max(5, "يسمح بخمسة ملفات PDF كحد أقصى للقرار الواحد."),
       }))
@@ -283,7 +284,7 @@ export const appRouter = router({
           if (!source) throw new TRPCError({ code: "BAD_REQUEST", message: "المراسلة المرجعية المختارة غير موجودة. اخترها من القائمة أو اترك الحقل فارغًا." });
           await ensureRecordAccess(ctx.user, document.sourceCorrespondenceId);
         }
-        const result = await archiveDb.createDecision({ ...document, issuingDepartmentId: scopedInputDepartment(ctx.user, document.issuingDepartmentId), createdById: ctx.user.id });
+        const result = await archiveDb.createDecision({ ...document, createdById: ctx.user.id });
         for (const pdf of pdfs) {
           await archiveOfficialPdf({ documentType: "decision", documentId: result.id, fileName: pdf.fileName, base64: pdf.base64, extractedText: document.bodyText, uploadedById: ctx.user.id });
         }

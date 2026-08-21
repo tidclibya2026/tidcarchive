@@ -37,7 +37,7 @@ describe("نطاق المكتب في الأرشيف", () => {
 
   it("يرفض تسجيل مراسلة في إدارة خارج نطاق مكتب الموظف", async () => {
     const caller = appRouter.createCaller(staffContext);
-    await expect(caller.correspondence.create({ type: "incoming", subject: "اختبار نطاق مكتب", sourceEntity: "جهة اختبار", documentDate: new Date(), priority: "normal", currentDepartmentId: 99 })).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(caller.correspondence.create({ type: "incoming", referenceNumber: "TIDC/و/2026/00998", subject: "اختبار نطاق مكتب", sourceEntity: "جهة اختبار", documentDate: new Date(), priority: "normal", currentDepartmentId: 99 })).rejects.toMatchObject({ code: "FORBIDDEN" });
     expect(mocks.createCorrespondence).not.toHaveBeenCalled();
   });
 });

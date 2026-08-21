@@ -352,6 +352,7 @@ export async function getCorrespondenceById(id: number) {
 
 export async function createCorrespondence(input: {
   type: "incoming" | "outgoing";
+  referenceNumber: string;
   subject: string;
   bodyText?: string;
   sourceEntity: string;
@@ -374,7 +375,9 @@ export async function createCorrespondence(input: {
   const db = requireDb(await getDb());
   const year = input.documentDate.getUTCFullYear();
   const sequence = await nextCorrespondenceSequence(input.type, year);
-  const referenceNumber = formatReferenceNumber(input.type, year, sequence);
+  const referenceNumber = input.referenceNumber.trim();
+  const duplicate = await db.select({ id: correspondence.id }).from(correspondence).where(eq(correspondence.referenceNumber, referenceNumber)).limit(1);
+  if (duplicate[0]) throw new Error("الرقم الإشاري مستخدم مسبقًا. أدخل رقمًا إشاريًا مختلفًا.");
   const result = await db.insert(correspondence).values({
     type: input.type,
     sequenceNumber: sequence,
@@ -498,6 +501,7 @@ export async function createDecision(input: {
   subject: string;
   bodyText?: string;
   effectiveDate: Date;
+  issuingAuthority: "prime_minister" | "tourism_minister" | "director_general";
   issuingDepartmentId?: number;
   sourceCorrespondenceId?: number;
   createdById: number;
@@ -512,6 +516,7 @@ export async function createDecision(input: {
     year,
     subject: input.subject,
     bodyText: input.bodyText || null,
+    issuingAuthority: input.issuingAuthority,
     effectiveDate: input.effectiveDate,
     issuingDepartmentId: input.issuingDepartmentId || null,
     sourceCorrespondenceId: input.sourceCorrespondenceId || null,
