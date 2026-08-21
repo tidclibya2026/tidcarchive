@@ -152,3 +152,8 @@
 - [x] Persist and display the selected decision issuing authority independently from departments and sections.
 - [x] Make the correspondence reference number a mandatory primary input for incoming and outgoing registration, with uniqueness validation and a visible required marker.
 - [x] Add tests for issuing-authority constraints and mandatory reference-number registration, then verify the production build.
+- [ ] Verify the existing Test correspondence record through the server-backed list and archive workflow after the latest release.
+- [ ] Exercise the decision form with each permitted issuing authority and verify departments are absent from the decision issuer selection.
+- [ ] Exercise incoming or outgoing correspondence validation with a required unique reference number and document the result.
+- [x] Verify that the dashboard statistics panel shows registered incoming correspondence, outgoing correspondence, and decisions with live counts.
+- [x] Verify that active internal units and external entities appear correctly in the incoming and outgoing correspondence selectors.
