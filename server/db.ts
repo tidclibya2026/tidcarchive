@@ -706,7 +706,7 @@ export async function searchArchive(input: {
     (record.documentType === "circular" && circularResults.some(item => item.record.id === record.documentId)),
   ) : attachmentResults;
   return [
-    ...correspondenceResults.map(({ record }) => ({ id: record.id, type: record.type, number: record.referenceNumber, subject: record.subject, date: record.documentDate, status: record.status, priority: record.priority })),
+    ...correspondenceResults.map(({ record }) => ({ id: record.id, type: record.type, number: record.referenceNumber, subject: record.subject, date: record.documentDate, status: record.status, priority: record.priority, classification: record.classification, confidentiality: record.confidentiality, keywords: record.keywords, archiveStatus: record.archiveStatus })),
     ...decisionResults.map(({ record, linkedNumber, linkedSubject }) => ({ id: record.id, type: "decision" as const, number: record.decisionNumber, subject: linkedNumber ? `${record.subject} — مرجع: ${linkedNumber}${linkedSubject ? ` (${linkedSubject})` : ""}` : record.subject, date: record.effectiveDate, status: record.legalStatus, priority: null })),
     ...circularResults.map(({ record, linkedNumber, linkedSubject }) => ({ id: record.id, type: "circular" as const, number: record.circularNumber, subject: linkedNumber ? `${record.subject} — مرجع: ${linkedNumber}${linkedSubject ? ` (${linkedSubject})` : ""}` : record.subject, date: record.issueDate, status: "issued", priority: null })),
     ...allowedAttachments.map(record => ({ id: record.id, type: "attachment" as const, number: record.fileName, subject: `مرفق رقمي: ${record.fileName}`, date: record.createdAt, status: record.documentType, ocrStatus: record.ocrStatus, priority: null })),

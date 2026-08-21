@@ -49,9 +49,9 @@ describe("إدارة الجهات والهيكل التنظيمي", () => {
     mocks.createCorrespondence.mockResolvedValueOnce({ id: 7, referenceNumber: "TIDC/ص/2026/00007" });
     const caller = appRouter.createCaller(staffContext);
 
-    await caller.correspondence.create({ type: "outgoing", subject: "تجربة جهة خارجية", sourceDepartmentId: 9, destinationExternalEntityId: 11, documentDate: new Date(), priority: "normal" });
+    await caller.correspondence.create({ type: "outgoing", subject: "تجربة جهة خارجية", sourceDepartmentId: 9, destinationExternalEntityId: 11, documentDate: new Date(), priority: "normal", classification: "إحصاءات", confidentiality: "internal", keywords: "منشآت، بيانات", archiveStatus: "approved" });
 
     expect(mocks.resolveCorrespondenceParties).toHaveBeenCalledWith(expect.objectContaining({ sourceDepartmentId: 9, destinationExternalEntityId: 11 }));
-    expect(mocks.createCorrespondence).toHaveBeenCalledWith(expect.objectContaining({ sourceEntity: "مكتب المتابعة", destinationEntity: "وزارة المالية", sourceDepartmentId: 9, destinationExternalEntityId: 11 }));
+    expect(mocks.createCorrespondence).toHaveBeenCalledWith(expect.objectContaining({ sourceEntity: "مكتب المتابعة", destinationEntity: "وزارة المالية", sourceDepartmentId: 9, destinationExternalEntityId: 11, classification: "إحصاءات", confidentiality: "internal", keywords: "منشآت، بيانات", archiveStatus: "approved" }));
   });
 });
